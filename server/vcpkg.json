@@ -3,6 +3,7 @@
     "crow",
     "jwt-cpp",
     "libsodium",
-    "sqlite-modern-cpp"
+    "sqlite-modern-cpp",
+    "nlohmann-json"
   ]
 }

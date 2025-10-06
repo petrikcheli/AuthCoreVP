@@ -9,11 +9,18 @@ find_package(jwt-cpp CONFIG REQUIRED)
 find_package(unofficial-sodium CONFIG REQUIRED)
 find_path(SQLITE_MODERN_CPP_INCLUDE_DIRS "sqlite_modern_cpp.h")
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
+find_package(jwt-cpp CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 add_executable(server
     main.cpp
+    data_base.h
+    password_hasher.h
+    jwt_manager.h
 )
 
+target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
+target_link_libraries(server PRIVATE jwt-cpp::jwt-cpp)
 target_include_directories(server PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 target_link_libraries(server PRIVATE unofficial::sqlite3::sqlite3)
 target_link_libraries(server PRIVATE Crow::Crow asio::asio)
