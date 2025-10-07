@@ -20,6 +20,13 @@ std::optional<std::string> verify_jwt_from_cookie(const crow::request& req, jwt_
     return jwt.get_username(token);
 }
 
+std::optional<std::string> verify_jwt_from_header(const crow::request& req, jwt_manager& jwt) {
+    auto auth = req.get_header_value("Authorization");
+    if(auth.rfind("Bearer ", 0) != 0) return std::nullopt;
+    std::string token = auth.substr(7);
+    if(!jwt.verify_token(token)) return std::nullopt;
+    return jwt.get_username(token);
+}
 
 int main() {
     password_hasher::init();
@@ -340,7 +347,7 @@ int main() {
 
     // Получить список всех пользователей
     CROW_ROUTE(app, "/api/admin/users").methods("GET"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         std::vector<User> users;
@@ -356,7 +363,7 @@ int main() {
 
     // Добавить пользователя
     CROW_ROUTE(app, "/api/admin/add-user").methods("POST"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
@@ -377,7 +384,7 @@ int main() {
 
     // Удалить пользователя
     CROW_ROUTE(app, "/api/admin/delete-user").methods("POST"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
@@ -391,7 +398,7 @@ int main() {
 
     // Получить список всех контроллеров
     CROW_ROUTE(app, "/api/admin/controllers").methods("GET"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         std::vector<Controller> ctrls;
@@ -407,7 +414,7 @@ int main() {
 
     // Добавить контроллер
     CROW_ROUTE(app, "/api/admin/add-controller").methods("POST"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
@@ -424,7 +431,7 @@ int main() {
 
     // Удалить контроллер
     CROW_ROUTE(app, "/api/admin/delete-controller").methods("POST"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
@@ -438,7 +445,7 @@ int main() {
 
     // Выдать доступ пользователю к контроллеру
     CROW_ROUTE(app, "/api/admin/grant-access").methods("POST"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
@@ -454,7 +461,7 @@ int main() {
 
     // Удалить доступ пользователя к контроллеру
     CROW_ROUTE(app, "/api/admin/revoke-access").methods("POST"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
@@ -470,7 +477,7 @@ int main() {
 
     // Выдать доступ пользователю ко всем контроллерам
     CROW_ROUTE(app, "/api/admin/grant-access-all").methods("POST"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
@@ -484,7 +491,7 @@ int main() {
 
     // Удалить доступ пользователя ко всем контроллерам
     CROW_ROUTE(app, "/api/admin/revoke-access-all").methods("POST"_method)([&db, &jwt](const crow::request& req){
-        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        auto username_opt = verify_jwt_from_header(req, jwt);
         if (!username_opt) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
