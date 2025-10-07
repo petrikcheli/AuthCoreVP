@@ -1,5 +1,4 @@
 project(server LANGUAGES CXX)
-cmake_minimum_required(VERSION 3.20)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -22,17 +21,27 @@ file(GLOB SOURCES
 )
 
 # Создаём исполняемый файл
-add_executable(server ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Указываем, где искать заголовочные файлы
-target_include_directories(server PRIVATE db jwt hasher)
-target_include_directories(server PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
+target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher)
+target_include_directories(${PROJECT_NAME} PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 
-target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
-target_link_libraries(server PRIVATE jwt-cpp::jwt-cpp)
-target_link_libraries(server PRIVATE unofficial::sqlite3::sqlite3)
-target_link_libraries(server PRIVATE Crow::Crow asio::asio)
-target_link_libraries(server PRIVATE unofficial-sodium::sodium)
+# target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
+# target_link_libraries(server PRIVATE jwt-cpp::jwt-cpp)
+# target_link_libraries(server PRIVATE unofficial::sqlite3::sqlite3)
+# target_link_libraries(server PRIVATE Crow::Crow asio::asio)
+# target_link_libraries(server PRIVATE unofficial-sodium::sodium)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    nlohmann_json::nlohmann_json
+    jwt-cpp::jwt-cpp
+    unofficial::sqlite3::sqlite3
+    Crow::Crow
+    asio::asio
+    unofficial-sodium::sodium
+)
+
 # todo: сделать условие для unix
 if (WIN32)
     target_link_libraries(server PRIVATE wsock32 ws2_32)
@@ -50,7 +59,7 @@ add_custom_target(copy_resources ALL
 
 
 include(GNUInstallDirs)
-install(TARGETS server
+install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

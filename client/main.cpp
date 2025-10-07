@@ -6,7 +6,7 @@
 int main(int argc, char** argv) {
     QApplication app(argc, argv);
 
-    ApiClient api("http://localhost:8080"); // нужно поменять базовый URL на другой
+    ApiClient api("http://127.0.0.1:18080"); // нужно поменять базовый URL на другой
 
     while (true) {
         AuthDialog auth(&api);
