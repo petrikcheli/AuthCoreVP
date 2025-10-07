@@ -54,7 +54,7 @@ void AuthDialog::onLoginClicked() {
     }
 
     // admin/admin — обязательная смена пароля
-    if (user == "admin" && pass == "admin") {
+    if (user == "admin" && pass == "admin123") {
         ChangePasswordDialog dlg(token, api_, this);
         if (dlg.exec() != QDialog::Accepted) {
             QMessageBox::information(this, "Смена пароля", "Вы должны сменить пароль перед входом.");

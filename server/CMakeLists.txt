@@ -27,12 +27,6 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher)
 target_include_directories(${PROJECT_NAME} PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 
-# target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
-# target_link_libraries(server PRIVATE jwt-cpp::jwt-cpp)
-# target_link_libraries(server PRIVATE unofficial::sqlite3::sqlite3)
-# target_link_libraries(server PRIVATE Crow::Crow asio::asio)
-# target_link_libraries(server PRIVATE unofficial-sodium::sodium)
-
 target_link_libraries(${PROJECT_NAME} PRIVATE
     nlohmann_json::nlohmann_json
     jwt-cpp::jwt-cpp
@@ -50,13 +44,14 @@ endif()
 # Копируем templates и static рядом с бинарником после сборки
 add_custom_target(copy_resources ALL
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/templates
-            ${CMAKE_BINARY_DIR}/templates
+            ${CMAKE_CURRENT_SOURCE_DIR}/templates
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/templates
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-            ${CMAKE_SOURCE_DIR}/static
-            ${CMAKE_BINARY_DIR}/static
+            ${CMAKE_CURRENT_SOURCE_DIR}/static
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/static
 )
 
+add_dependencies(${PROJECT_NAME} copy_resources)
 
 include(GNUInstallDirs)
 install(TARGETS ${PROJECT_NAME}
