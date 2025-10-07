@@ -8,8 +8,6 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
-
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui)
 find_package(Threads REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
