@@ -26,7 +26,9 @@ target_link_libraries(server PRIVATE unofficial::sqlite3::sqlite3)
 target_link_libraries(server PRIVATE Crow::Crow asio::asio)
 target_link_libraries(server PRIVATE unofficial-sodium::sodium)
 # todo: сделать условие для unix
-target_link_libraries(server PRIVATE wsock32 ws2_32)
+if (WIN32)
+    target_link_libraries(server PRIVATE wsock32 ws2_32)
+endif()
 
 # Копируем templates и static рядом с бинарником после сборки
 add_custom_target(copy_resources ALL
