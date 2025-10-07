@@ -7,7 +7,7 @@ struct User {
     int id;
     std::string username;
     std::string role;
-    std::string full_name;
+    std::string full_name; // если сервер возвращает это поле
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(User, id, username, role, full_name)
 
@@ -45,4 +45,5 @@ public:
 
 private:
     std::string baseUrl;
+    void isFullName(const nlohmann::json& j, User& u);
 };

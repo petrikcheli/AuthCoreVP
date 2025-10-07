@@ -64,8 +64,10 @@ std::vector<User> ApiClient::getUsers(const std::string& token, std::string& err
         std::string header = "Authorization: Bearer " + token;
         auto resp = getJson(baseUrl + "/api/admin/users", {header});
         auto j = json::parse(resp);
-        for (auto& it : j)
+        
+        for (const auto& it : j)
             res.push_back(it.get<User>());
+            
     } catch (std::exception& e) {
         err = e.what();
     }
@@ -196,4 +198,3 @@ bool ApiClient::revokeAllControllers(const std::string& token, int userId, std::
         return false;
     }
 }
-

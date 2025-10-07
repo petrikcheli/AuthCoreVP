@@ -25,6 +25,8 @@ MainWindow::MainWindow(ApiClient* api, const QString& token, QWidget* parent)
     loadTopCombos();
 }
 
+void MainWindow::setToken(const QString& token) { token_ = token; }
+
 // Создание UI и подключение сигналов
 void MainWindow::buildUi() {
     auto central = new QWidget(this);
@@ -33,7 +35,7 @@ void MainWindow::buildUi() {
     // Верхняя панель
     auto top = new QHBoxLayout();
     usersCombo_ = new QComboBox();
-    usersCombo_->addItem("Пользователи:");
+    // usersCombo_->addItem("Пользователи:");
     usersCombo_->addItem("Добавить пользователя");
     usersCombo_->addItem("Посмотреть всех пользователей");
     usersCombo_->addItem("Изменить пользователя");
@@ -91,6 +93,11 @@ void MainWindow::buildUi() {
         auto lay = new QVBoxLayout(viewUsersWidget_);
         auto refresh = new QPushButton("Обновить список");
         auto table = new QTableWidget();
+
+        // Скрываем левый вертикальный заголовок и угол
+        table->verticalHeader()->setVisible(false);
+        table->setCornerButtonEnabled(false);
+        
         table->setColumnCount(3);
         table->setHorizontalHeaderLabels({"ID","Имя","Роль"});
         table->horizontalHeader()->setStretchLastSection(true);
@@ -307,17 +314,17 @@ void MainWindow::loadTopCombos() {
     }
 }
 
-// 0 - заголовок; 1 - Добавить; 2 - Посмотреть всех; 3 - Изменить; 4 - Создание роли; 5 - Добавить доступ; 6 - Удалить доступ
+// 0 - Добавить; 1 - Посмотреть всех; 2 - Изменить; 3 - Создание роли; 4 - Добавить доступ; 5 - Удалить доступ
 void MainWindow::onUsersComboChanged(int idx) {
     switch (idx) {
-    case 1: mainStack_->setCurrentWidget(addUserWidget_); break;
-    case 2: mainStack_->setCurrentWidget(viewUsersWidget_); break;
-    case 3: mainStack_->setCurrentWidget(editUserWidget_); break;
-    case 4: mainStack_->setCurrentWidget(createRoleWidget_); break;
-    case 5: mainStack_->setCurrentWidget(grantWidget_); break;
-    case 6: mainStack_->setCurrentWidget(revokeWidget_); break;
-    default: break;
-    }
+        case 0: mainStack_->setCurrentWidget(addUserWidget_); break;
+        case 1: mainStack_->setCurrentWidget(viewUsersWidget_); break;
+        case 2: mainStack_->setCurrentWidget(editUserWidget_); break;
+        case 3: mainStack_->setCurrentWidget(createRoleWidget_); break;
+        case 4: mainStack_->setCurrentWidget(grantWidget_); break;
+        case 5: mainStack_->setCurrentWidget(revokeWidget_); break;
+        default: break;
+        }
 }
 
 void MainWindow::onControllersComboChanged(int idx) {

@@ -53,7 +53,7 @@ void AuthDialog::onLoginClicked() {
         return;
     }
 
-    // admin/admin — обязательная смена пароля
+    // admin/admin123 — обязательная смена пароля
     if (user == "admin" && pass == "admin123") {
         ChangePasswordDialog dlg(token, api_, this);
         if (dlg.exec() != QDialog::Accepted) {

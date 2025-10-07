@@ -12,6 +12,7 @@ class MainWindow : public QMainWindow {
     Q_OBJECT
 public:
     MainWindow(ApiClient* api, const QString& token, QWidget* parent = nullptr);
+    void setToken(const QString& token);
 
 signals:
     void logoutRequested();
@@ -20,7 +21,7 @@ private slots:
     void onUsersComboChanged(int idx);
     void onControllersComboChanged(int idx);
     void onLogout();
-    // user actions
+
     void showAddUserForm();
     void showViewUsers();
     void showEditUserFlow();

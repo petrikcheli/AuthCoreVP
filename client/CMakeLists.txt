@@ -43,6 +43,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     nlohmann_json::nlohmann_json
 )
 
+add_custom_target(copy ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/style
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/style
+)
+
+add_dependencies(${PROJECT_NAME} copy)
+
 enable_testing()
 
 add_executable(tests ${TEST_SOURCES})
