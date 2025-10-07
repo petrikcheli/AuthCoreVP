@@ -32,6 +32,18 @@ int main() {
         return crow::mustache::load("login.html").render();
     });
 
+    // api/admin/login
+    // api/admin/users
+    // api/admin/add-user
+    // api/admin/delete-user
+    // api/admin/controllers
+    // api/admin/add-controller
+    // api/admin/delete-controller
+    // api/admin/grant-access
+    // api/admin/revoke-access
+    // api/admin/grant-access-all
+    // api/admin/revoke-access-all
+
     CROW_ROUTE(app, "/admin/login").methods("POST"_method)(
         [&db, &jwt](const crow::request& req){
             std::string username;
@@ -305,45 +317,183 @@ int main() {
     );
 
 
-    CROW_ROUTE(app, "/admin/change-password/api").methods("POST"_method)(
-        [&db, &jwt](const crow::request& req){
-            auto body = nlohmann::json::parse(req.body, nullptr, false);
-            if(body.is_discarded())
-                return crow::response(400, "Invalid JSON");
+    //API
+    // Авторизация администратора
+    CROW_ROUTE(app, "/api/admin/login").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        auto body = nlohmann::json::parse(req.body, nullptr, false);
+        if (body.is_discarded())
+            return crow::response(400, "Invalid JSON");
 
-            std::string admin_token = body.value("token", "");
-            if(!jwt.verify_token(admin_token))
-                return crow::response(401, "Unauthorized");
+        std::string username = body.value("username", "");
+        std::string password = body.value("password", "");
 
-            int user_id = body.value("user_id", 0);
-            std::string new_password = body.value("new_password", "");
+        auto user = db.authenticate(username, password);
+        if (!user || user->role != "admin")
+            return crow::response(401, "Unauthorized");
 
-            bool ok = db.update_password(user_id, new_password);
-            if(!ok) return crow::response(400, "Failed to change password");
-
-            return crow::response(200, "Password changed");
-        }
-    );
+        std::string token = jwt.create_token(username, 3600 * 24); // сутки
+        nlohmann::json res = {{"token", token}, {"username", username}};
+        return crow::response(res.dump());
+    });
 
 
-    CROW_ROUTE(app, "/admin/delete/api").methods("POST"_method)(
-        [&db, &jwt](const crow::request& req){
-            auto body = nlohmann::json::parse(req.body, nullptr, false);
-            if(body.is_discarded())
-                return crow::response(400, "Invalid JSON");
+    // Получить список всех пользователей
+    CROW_ROUTE(app, "/api/admin/users").methods("GET"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
 
-            std::string admin_token = body.value("token", "");
-            if(!jwt.verify_token(admin_token))
-                return crow::response(401, "Unauthorized");
+        std::vector<User> users;
+        db.get_all_users(users);
 
-            int user_id = body.value("user_id", 0);
+        nlohmann::json arr = nlohmann::json::array();
+        for (auto& u : users)
+            arr.push_back({{"id", u.id}, {"username", u.username}, {"role", u.role}});
 
-            if(!db.delete_user(user_id))
-                return crow::response(400, "Failed to delete user");
+        return crow::response(arr.dump());
+    });
 
-            return crow::response(200, "User deleted");
-        }
-    );
+
+    // Добавить пользователя
+    CROW_ROUTE(app, "/api/admin/add-user").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
+
+        auto body = nlohmann::json::parse(req.body, nullptr, false);
+        if (body.is_discarded()) return crow::response(400, "Invalid JSON");
+
+        std::string username = body.value("username", "");
+        std::string full_name = body.value("full_name", "");
+        std::string password = body.value("password", "");
+        std::string role = body.value("role", "operator");
+
+        if (username.empty() || full_name.empty() || password.empty())
+            return crow::response(400, "Missing fields");
+
+        bool ok = db.add_user(username, full_name, password, role);
+        return ok ? crow::response(200, "User added") : crow::response(400, "Failed to add user");
+    });
+
+
+    // Удалить пользователя
+    CROW_ROUTE(app, "/api/admin/delete-user").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
+
+        auto body = nlohmann::json::parse(req.body, nullptr, false);
+        int user_id = body.value("id", 0);
+        if (user_id == 0) return crow::response(400, "Invalid user ID");
+
+        bool ok = db.delete_user(user_id);
+        return ok ? crow::response(200, "User deleted") : crow::response(400, "Failed to delete user");
+    });
+
+
+    // Получить список всех контроллеров
+    CROW_ROUTE(app, "/api/admin/controllers").methods("GET"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
+
+        std::vector<Controller> ctrls;
+        db.get_all_controllers(ctrls);
+
+        nlohmann::json arr = nlohmann::json::array();
+        for (auto& c : ctrls)
+            arr.push_back({{"id", c.id}, {"name", c.name}, {"serial", c.serial_number}});
+
+        return crow::response(arr.dump());
+    });
+
+
+    // Добавить контроллер
+    CROW_ROUTE(app, "/api/admin/add-controller").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
+
+        auto body = nlohmann::json::parse(req.body, nullptr, false);
+        std::string name = body.value("name", "");
+        std::string serial = body.value("serial", "");
+
+        if (name.empty() || serial.empty())
+            return crow::response(400, "Missing fields");
+
+        bool ok = db.add_controller(name, serial);
+        return ok ? crow::response(200, "Controller added") : crow::response(400, "Failed to add controller");
+    });
+
+
+    // Удалить контроллер
+    CROW_ROUTE(app, "/api/admin/delete-controller").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
+
+        auto body = nlohmann::json::parse(req.body, nullptr, false);
+        int ctrl_id = body.value("id", 0);
+        if (ctrl_id == 0) return crow::response(400, "Invalid controller ID");
+
+        bool ok = db.delete_controller(ctrl_id);
+        return ok ? crow::response(200, "Controller deleted") : crow::response(400, "Failed to delete controller");
+    });
+
+
+    // Выдать доступ пользователю к контроллеру
+    CROW_ROUTE(app, "/api/admin/grant-access").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
+
+        auto body = nlohmann::json::parse(req.body, nullptr, false);
+        int user_id = body.value("user_id", 0);
+        int controller_id = body.value("controller_id", 0);
+        if (user_id == 0 || controller_id == 0)
+            return crow::response(400, "Invalid fields");
+
+        bool ok = db.grant_access(user_id, controller_id);
+        return ok ? crow::response(200, "Access granted") : crow::response(400, "Failed to grant access");
+    });
+
+
+    // Удалить доступ пользователя к контроллеру
+    CROW_ROUTE(app, "/api/admin/revoke-access").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
+
+        auto body = nlohmann::json::parse(req.body, nullptr, false);
+        int user_id = body.value("user_id", 0);
+        int controller_id = body.value("controller_id", 0);
+        if (user_id == 0 || controller_id == 0)
+            return crow::response(400, "Invalid fields");
+
+        bool ok = db.revoke_access(user_id, controller_id);
+        return ok ? crow::response(200, "Access revoked") : crow::response(400, "Failed to revoke access");
+    });
+
+
+    // Выдать доступ пользователю ко всем контроллерам
+    CROW_ROUTE(app, "/api/admin/grant-access-all").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
+
+        auto body = nlohmann::json::parse(req.body, nullptr, false);
+        int user_id = body.value("user_id", 0);
+        if (user_id == 0) return crow::response(400, "Invalid user ID");
+
+        bool ok = db.grant_all_access(user_id);
+        return ok ? crow::response(200, "Access granted to all") : crow::response(400, "Failed");
+    });
+
+
+    // Удалить доступ пользователя ко всем контроллерам
+    CROW_ROUTE(app, "/api/admin/revoke-access-all").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt) return crow::response(401, "Unauthorized");
+
+        auto body = nlohmann::json::parse(req.body, nullptr, false);
+        int user_id = body.value("user_id", 0);
+        if (user_id == 0) return crow::response(400, "Invalid user ID");
+
+        bool ok = db.revoke_all_access(user_id);
+        return ok ? crow::response(200, "Access revoked from all") : crow::response(400, "Failed");
+    });
+
 
     app.port(18080).multithreaded().run();
 }
