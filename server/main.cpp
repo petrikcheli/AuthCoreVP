@@ -348,16 +348,30 @@ int main() {
     // Получить список всех пользователей
     CROW_ROUTE(app, "/api/admin/users").methods("GET"_method)([&db, &jwt](const crow::request& req){
         auto username_opt = verify_jwt_from_header(req, jwt);
-        if (!username_opt) return crow::response(401, "Unauthorized");
+        if (!username_opt)
+            return crow::response(401, "Unauthorized");
 
         std::vector<User> users;
         db.get_all_users(users);
 
         nlohmann::json arr = nlohmann::json::array();
-        for (auto& u : users)
-            arr.push_back({{"id", u.id}, {"username", u.username}, {"role", u.role}});
+        for (auto& u : users) {
+            arr.push_back({
+                {"id", u.id},
+                {"username", u.username},
+                {"full_name", u.full_name},
+                {"role", u.role}
+                // если есть email или phone, можно добавить:
+                // {"email", u.email},
+                // {"phone", u.phone}
+            });
+        }
 
-        return crow::response(arr.dump());
+        crow::response res;
+        res.code = 200;
+        res.set_header("Content-Type", "application/json");
+        res.body = arr.dump(4); // красивый JSON с отступами
+        return res;
     });
 
 
