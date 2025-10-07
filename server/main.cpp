@@ -2,6 +2,7 @@
 #include "password_hasher.h"
 #include "data_base.h"
 #include "jwt_manager.h"
+
 #include <nlohmann/json.hpp>
 
 std::optional<std::string> verify_jwt_from_cookie(const crow::request& req, jwt_manager& jwt) {

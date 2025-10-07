@@ -3,6 +3,7 @@
 #include <vector>
 #include <optional>
 #include <sqlite_modern_cpp.h>
+
 #include "password_hasher.h"
 
 struct User {

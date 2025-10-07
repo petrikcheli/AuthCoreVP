@@ -1,6 +1,4 @@
-// PasswordHasher.h
 #pragma once
-
 #include <sodium.h>
 #include <string>
 #include <stdexcept>
