@@ -15,16 +15,21 @@ find_package(nlohmann_json CONFIG REQUIRED)
 # Собираем все исходники, включая файлы из db/
 file(GLOB SOURCES
     main.cpp
-    # password_hasher.h
-    # jwt_manager.h
+    haser/*.h
+    haser/*.cpp
+    jwt/*.h
+    jwt/*.cpp
+    routes/*.cpp
+    routes/*.h
     db/*.cpp
+    db/*.h
 )
 
 # Создаём исполняемый файл
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Указываем, где искать заголовочные файлы
-target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher)
+target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher routes)
 target_include_directories(${PROJECT_NAME} PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

@@ -3,37 +3,247 @@
 <head>
   <meta charset="UTF-8">
   <title>Контроллеры</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/admin_sidebar.css">
+  <style>
+    .controllers-container {
+      display: flex;
+      flex-direction: column;
+      max-width: 900px;
+      margin: 20px auto;
+      gap: 20px;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .top-bar button, .top-bar input {
+      padding: 10px 15px;
+      border-radius: 8px;
+      font-size: 14px;
+      border: 1px solid #cbd5e1;
+      transition: 0.2s;
+    }
+
+    .top-bar button {
+      border: none;
+      background-color: #4B6BFB;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .top-bar button:hover {
+      background-color: #5c7cfe;
+    }
+
+    .top-bar input {
+      flex: 1;
+      min-width: 200px;
+      border: 1px solid #cbd5e1;
+    }
+
+    .add-controller-card {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .add-controller-card input {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .add-controller-card button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #4B6BFB;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .add-controller-card button:hover {
+      background-color: #5c7cfe;
+    }
+
+    .controllers-list {
+      background-color: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+      overflow-x: auto;
+      max-height: 500px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 600px;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th {
+      background-color: #f3f4f6;
+      font-weight: 600;
+    }
+
+    td button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      background-color: #ef4444;
+      color: white;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+
+    td button:hover {
+      background-color: #dc2626;
+    }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pagination button {
+      padding: 6px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      background-color: #fff;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+
+    .pagination button:hover {
+      background-color: #f3f4f6;
+    }
+
+    .pagination button.active {
+      background-color: #4B6BFB;
+      color: white;
+      border-color: #4B6BFB;
+    }
+  </style>
 </head>
 <body>
-  <h2>Список контроллеров</h2>
-  <table>
-    <tr><th>ID</th><th>Название</th><th>Действия</th></tr>
-    {{#controllers}}
-    <tr>
-      <td>{{id}}</td>
-      <td>{{name}}</td>
-      <td><button onclick="deleteController({{id}})">Удалить</button></td>
-    </tr>
-    {{/controllers}}
-  </table>
+  <div class="controllers-container">
+    <!-- Верхняя панель: назад + поиск -->
+    <div class="top-bar">
+      <button onclick="location.href='/admin/panel'">← Назад</button>
+      <input type="text" id="searchInput" placeholder="Поиск контроллеров..." onkeyup="filterControllers()">
+    </div>
 
-  <h3>Добавить контроллер</h3>
-  <input type="text" id="ctrlName" placeholder="Название">
-  <input type="text" id="ctrlSerial" placeholder="Serial Number">
-  <button onclick="addController()">Добавить</button>
+    <!-- Форма добавления -->
+    <div class="add-controller-card">
+      <input type="text" id="ctrlName" placeholder="Название">
+      <input type="text" id="ctrlSerial" placeholder="Serial Number">
+      <button onclick="addController()">Добавить контроллер</button>
+    </div>
 
-  <button onclick="location.href='/admin/panel'">Назад</button>
+    <!-- Список контроллеров -->
+    <div class="controllers-list">
+      <table id="controllersTable">
+        <thead>
+          <tr><th>ID</th><th>Название</th><th>Serial</th><th>Действия</th></tr>
+        </thead>
+        <tbody>
+          {{#controllers}}
+          <tr>
+            <td>{{id}}</td>
+            <td>{{name}}</td>
+            <td>{{serial}}</td>
+            <td><button onclick="deleteController({{id}})">Удалить</button></td>
+          </tr>
+          {{/controllers}}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
 
   <script>
+    const rowsPerPage = 10;
+    const table = document.getElementById('controllersTable').getElementsByTagName('tbody')[0];
+    const pagination = document.getElementById('pagination');
+    const rows = Array.from(table.rows);
+
+    function showPage(page) {
+      const start = (page - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      rows.forEach((row, i) => row.style.display = (i >= start && i < end) ? '' : 'none');
+
+      // обновление кнопок пагинации
+      pagination.innerHTML = '';
+      const totalPages = Math.ceil(rows.length / rowsPerPage);
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        if (i === page) btn.classList.add('active');
+        btn.onclick = () => showPage(i);
+        pagination.appendChild(btn);
+      }
+    }
+
+    showPage(1);
+
+    function filterControllers() {
+      const filter = document.getElementById('searchInput').value.toLowerCase();
+      rows.forEach(row => {
+        const name = row.cells[1].textContent.toLowerCase();
+        const serial = row.cells[2].textContent.toLowerCase();
+        row.style.display = (name.includes(filter) || serial.includes(filter)) ? '' : 'none';
+      });
+
+      // обновление пагинации после фильтрации
+      const visibleRows = rows.filter(row => row.style.display !== 'none');
+      pagination.innerHTML = '';
+      const totalPages = Math.ceil(visibleRows.length / rowsPerPage);
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+        if (i === 1) btn.classList.add('active');
+        btn.onclick = () => showFilteredPage(i, visibleRows);
+        pagination.appendChild(btn);
+      }
+      showFilteredPage(1, visibleRows);
+    }
+
+    function showFilteredPage(page, visibleRows) {
+      const start = (page - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      visibleRows.forEach((row, i) => row.style.display = (i >= start && i < end) ? '' : 'none');
+    }
+
     async function addController() {
       const name = document.getElementById('ctrlName').value.trim();
       const serial = document.getElementById('ctrlSerial').value.trim();
-
-      if (!name || !serial) {
-        alert("Введите название и serial контроллера");
-        return;
-      }
+      if (!name || !serial) { alert("Введите название и serial"); return; }
 
       try {
         const res = await fetch('/admin/add-controller', {
@@ -41,37 +251,22 @@
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({name, serial})
         });
-
-        if (res.ok) {
-          location.reload();
-        } else {
-          const text = await res.text();
-          alert("Ошибка при добавлении контроллера: " + text);
-        }
-      } catch (err) {
-        alert("Ошибка запроса: " + err);
-      }
+        if (res.ok) location.reload();
+        else alert(await res.text());
+      } catch(err) { alert("Ошибка: " + err); }
     }
 
     async function deleteController(id) {
       if (!confirm("Удалить контроллер?")) return;
-
       try {
         const res = await fetch('/admin/delete-controller', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({id})
         });
-
-        if (res.ok) {
-          location.reload();
-        } else {
-          const text = await res.text();
-          alert("Ошибка при удалении контроллера: " + text);
-        }
-      } catch (err) {
-        alert("Ошибка запроса: " + err);
-      }
+        if (res.ok) location.reload();
+        else alert(await res.text());
+      } catch(err) { alert("Ошибка: " + err); }
     }
   </script>
 </body>

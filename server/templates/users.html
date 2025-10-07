@@ -1,66 +1,131 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Пользователи</title>
-  <link rel="stylesheet" href="/static/style.css">
+<meta charset="UTF-8">
+<title>Пользователи</title>
+<style>
+body { font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background-color:#f5f5f5; margin:0; padding:0;}
+.container { max-width:900px; margin:20px auto; display:flex; flex-direction:column; gap:10px;}
+.top-bar { display:flex; gap:10px; flex-wrap:wrap;}
+.top-bar button { padding:10px 15px; border-radius:8px; border:none; background-color:#4B6BFB; color:white; font-weight:600; cursor:pointer;}
+.top-bar button:hover { background-color:#5c7cfe;}
+.top-bar input { flex:1; padding:10px; border-radius:8px; border:1px solid #cbd5e1;}
+.add-form {
+  position: sticky;
+  top:0;
+  background:#fff;
+  padding:15px;
+  border-radius:12px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.06);
+  z-index:10;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-items:center;
+}
+.add-form input { padding:8px; border-radius:8px; border:1px solid #cbd5e1;}
+.add-form button { padding:8px 12px; border-radius:8px; border:none; background-color:#4B6BFB; color:white; font-weight:600; cursor:pointer;}
+.add-form button:hover { background-color:#5c7cfe;}
+.users-list {
+  max-height:500px;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.user-card {
+  background-color:#fff;
+  border-radius:12px;
+  padding:15px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.06);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  transition: transform 0.2s;
+}
+.user-card:hover { transform:translateY(-2px);}
+.user-info { display:flex; flex-direction:column;}
+.user-info span { margin:2px 0;}
+.actions button { margin-left:5px; padding:6px 12px; border-radius:8px; border:none; background-color:#4B6BFB; color:white; cursor:pointer; font-weight:500; transition:0.2s;}
+.actions button:hover { background-color:#5c7cfe;}
+</style>
 </head>
 <body>
-  <h2>Список пользователей</h2>
-  <table>
-    <tr><th>ID</th><th>Имя пользователя</th><th>Роль</th><th>Действия</th></tr>
+
+<div class="container">
+
+  <div class="top-bar">
+    <button onclick="location.href='/admin/panel'">← Назад</button>
+    <input type="text" id="searchUser" placeholder="Поиск пользователя..." onkeyup="filterUsers()">
+  </div>
+
+  <!-- Форма добавления всегда сверху -->
+  <div class="add-form">
+    <input type="text" id="username" placeholder="Имя пользователя">
+    <input type="text" id="full_name" placeholder="Полное имя">
+    <input type="password" id="password" placeholder="Пароль">
+    <input type="text" id="role" placeholder="Роль (admin/operator)">
+    <button onclick="addUser()">Добавить</button>
+  </div>
+
+  <!-- Список пользователей -->
+  <div class="users-list" id="usersList">
     {{#users}}
-    <tr>
-      <td>{{id}}</td>
-      <td>{{username}}</td>
-      <td>{{role}}</td>
-      <td>
+    <div class="user-card">
+      <div class="user-info">
+        <span><strong>ID:</strong> {{id}}</span>
+        <span><strong>Имя:</strong> {{username}}</span>
+        <span><strong>Роль:</strong> {{role}}</span>
+      </div>
+      <div class="actions">
         <button onclick="deleteUser({{id}})">Удалить</button>
-      </td>
-    </tr>
+      </div>
+    </div>
     {{/users}}
-  </table>
+  </div>
 
-  <h3>Добавить пользователя</h3>
-  <input type="text" id="username" placeholder="Имя пользователя">
-  <input type="text" id="full_name" placeholder="Полное имя">
-  <input type="password" id="password" placeholder="Пароль">
-  <input type="text" id="role" placeholder="Роль (admin/operator)">
-  <button onclick="addUser()">Добавить</button>
+</div>
 
-  <button onclick="location.href='/admin/panel'">Назад</button>
+<script>
+function filterUsers() {
+  const filter = document.getElementById("searchUser").value.toLowerCase();
+  document.querySelectorAll('.user-card').forEach(card => {
+    const username = card.querySelector('.user-info span:nth-child(2)').textContent.toLowerCase();
+    card.style.display = username.includes(filter) ? '' : 'none';
+  });
+}
 
-  <script>
-    async function addUser() {
-      const username = document.getElementById('username').value;
-      const full_name = document.getElementById('full_name').value;
-      const password = document.getElementById('password').value;
-      const role = document.getElementById('role').value;
+async function addUser() {
+  const username = document.getElementById('username').value.trim();
+  const full_name = document.getElementById('full_name').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const role = document.getElementById('role').value.trim();
 
-      if(!username || !password) {
-        alert("Имя пользователя и пароль обязательны!");
-        return;
-      }
+  if(!username || !password) { alert("Имя пользователя и пароль обязательны!"); return; }
 
-      const res = await fetch('/admin/add-user', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username, full_name, password, role})
-      });
+  const res = await fetch('/admin/add-user', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({username, full_name, password, role})
+  });
 
-      if(res.ok) location.reload();
-      else alert("Не удалось добавить пользователя");
-    }
+  if(res.ok) location.reload();
+  else alert("Не удалось добавить пользователя");
+}
 
-    async function deleteUser(id) {
-      const res = await fetch('/admin/delete-user', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({id})
-      });
-      if(res.ok) location.reload();
-      else alert("Не удалось удалить пользователя");
-    }
-  </script>
+async function deleteUser(id) {
+  if(!confirm("Удалить пользователя?")) return;
+
+  const res = await fetch('/admin/delete-user', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({id})
+  });
+
+  if(res.ok) location.reload();
+  else alert("Не удалось удалить пользователя");
+}
+</script>
+
 </body>
 </html>

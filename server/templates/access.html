@@ -1,107 +1,111 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <title>Доступ сотрудников</title>
-  <link rel="stylesheet" href="/static/style.css">
+<meta charset="UTF-8">
+<title>Доступ сотрудников</title>
+<style>
+  body { font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin:0; padding:0;}
+  .access-container { max-width: 900px; margin: 20px auto; display:flex; flex-direction:column; gap:20px;}
+  .top-bar { display:flex; gap:10px; flex-wrap:wrap;}
+  .top-bar button { padding:10px 15px; border-radius:8px; border:none; background-color:#4B6BFB; color:white; font-weight:600; cursor:pointer;}
+  .top-bar button:hover { background-color:#5c7cfe; }
+  .top-bar input { flex:1; padding:10px; border-radius:8px; border:1px solid #cbd5e1;}
+  .users-list { display:flex; flex-direction:column; gap:15px;}
+  .user-card { background-color:#fff; border-radius:12px; padding:15px; box-shadow:0 4px 14px rgba(0,0,0,0.06); display:flex; flex-direction:column; gap:10px; transition: transform 0.2s;}
+  .user-card:hover { transform: translateY(-2px);}
+  .user-card h4 { margin:0;}
+  .controller-select { width:100%; padding:8px; border-radius:8px; border:1px solid #cbd5e1; height:80px;}
+  .controller-select option:checked { background-color:#4B6BFB; color:white;}
+  .actions { display:flex; gap:8px; flex-wrap:wrap;}
+  .actions button { padding:6px 12px; border-radius:8px; border:none; background-color:#4B6BFB; color:white; font-weight:500; cursor:pointer; transition: background-color 0.2s;}
+  .actions button:hover { background-color:#5c7cfe;}
+</style>
 </head>
 <body>
-  <h2>Управление доступом сотрудников к контроллерам</h2>
+<div class="access-container">
+  <div class="top-bar">
+    <button onclick="location.href='/admin/panel'">← Назад</button>
+    <input type="text" id="searchUser" placeholder="Поиск пользователя..." onkeyup="filterUsers()">
+  </div>
 
-  <!-- Выдать доступ к конкретному контроллеру -->
-  <h3>Выдать доступ к конкретному контроллеру</h3>
-  <select id="userSelect">
+  <div class="users-list" id="usersList">
     {{#users}}
-      <option value="{{id}}">{{username}}</option>
+    <div class="user-card">
+      <h4>{{username}}</h4>
+      <select multiple class="controller-select">
+        {{#controllers}}
+        <option value="{{id}}">{{name}}</option>
+        {{/controllers}}
+      </select>
+      <div class="actions">
+        <button onclick="grantAccess({{id}}, this)">Выдать доступ</button>
+        <button onclick="revokeAccess({{id}}, this)">Удалить доступ</button>
+        <button onclick="grantAll({{id}})">Всё</button>
+        <button onclick="revokeAll({{id}})">Снять всё</button>
+      </div>
+    </div>
     {{/users}}
-  </select>
-  <select id="controllerSelect">
-    {{#controllers}}
-      <option value="{{id}}">{{name}}</option>
-    {{/controllers}}
-  </select>
-  <button onclick="grantAccess()">Выдать доступ</button>
+  </div>
+</div>
 
-  <!-- Удалить доступ к конкретному контроллеру -->
-  <h3>Удалить доступ к конкретному контроллеру</h3>
-  <select id="userSelectRevoke">
-    {{#users}}
-      <option value="{{id}}">{{username}}</option>
-    {{/users}}
-  </select>
-  <select id="controllerSelectRevoke">
-    {{#controllers}}
-      <option value="{{id}}">{{name}}</option>
-    {{/controllers}}
-  </select>
-  <button onclick="revokeAccess()">Удалить доступ</button>
+<script>
+  // Поиск
+  function filterUsers() {
+    const filter = document.getElementById("searchUser").value.toLowerCase();
+    document.querySelectorAll('.user-card').forEach(card => {
+      const username = card.querySelector('h4').textContent.toLowerCase();
+      card.style.display = username.includes(filter) ? '' : 'none';
+    });
+  }
 
-  <!-- Выдать доступ ко всем контроллерам -->
-  <h3>Выдать доступ ко всем контроллерам</h3>
-  <select id="userSelectAllGrant">
-    {{#users}}
-      <option value="{{id}}">{{username}}</option>
-    {{/users}}
-  </select>
-  <button onclick="grantAll()">Дать доступ ко всем</button>
+  // Отправка выбранных контроллеров на сервер
+  async function grantAccess(userId, btn) {
+    const select = btn.closest('.user-card').querySelector('.controller-select');
+    const controllers = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+    if(controllers.length === 0) { alert("Выберите контроллеры"); return; }
 
-  <!-- Удалить доступ ко всем контроллерам -->
-  <h3>Удалить доступ ко всем контроллерам</h3>
-  <select id="userSelectAllRevoke">
-    {{#users}}
-      <option value="{{id}}">{{username}}</option>
-    {{/users}}
-  </select>
-  <button onclick="revokeAll()">Удалить доступ ко всем</button>
-
-  <button onclick="location.href='/admin/panel'">Назад</button>
-
-  <script>
-    async function grantAccess() {
-      const user_id = document.getElementById("userSelect").value;
-      const controller_id = document.getElementById("controllerSelect").value;
-      const res = await fetch('/admin/grant-access', {
+    await Promise.all(controllers.map(id =>
+      fetch('/admin/grant-access', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({user_id, controller_id})
-      });
-      if(res.ok) alert("Доступ выдан");
-      else alert("Ошибка");
-    }
+        body: JSON.stringify({user_id: userId, controller_id: id})
+      })
+    ));
+    alert(`Доступ выдан пользователю ${userId}`);
+  }
 
-    async function revokeAccess() {
-      const user_id = document.getElementById("userSelectRevoke").value;
-      const controller_id = document.getElementById("controllerSelectRevoke").value;
-      const res = await fetch('/admin/revoke-access', {
+  async function revokeAccess(userId, btn) {
+    const select = btn.closest('.user-card').querySelector('.controller-select');
+    const controllers = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+    if(controllers.length === 0) { alert("Выберите контроллеры"); return; }
+
+    await Promise.all(controllers.map(id =>
+      fetch('/admin/revoke-access', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({user_id, controller_id})
-      });
-      if(res.ok) alert("Доступ удалён");
-      else alert("Ошибка");
-    }
+        body: JSON.stringify({user_id: userId, controller_id: id})
+      })
+    ));
+    alert(`Доступ удалён у пользователя ${userId}`);
+  }
 
-    async function grantAll() {
-      const user_id = document.getElementById("userSelectAllGrant").value;
-      const res = await fetch('/admin/grant-access-all', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({user_id})
-      });
-      if(res.ok) alert("Доступ ко всем выдан");
-      else alert("Ошибка");
-    }
+  async function grantAll(userId) {
+    const res = await fetch('/admin/grant-access-all', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({user_id: userId})
+    });
+    if(res.ok) alert(`Доступ ко всем выдан пользователю ${userId}`);
+  }
 
-    async function revokeAll() {
-      const user_id = document.getElementById("userSelectAllRevoke").value;
-      const res = await fetch('/admin/revoke-access-all', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({user_id})
-      });
-      if(res.ok) alert("Доступ ко всем удалён");
-      else alert("Ошибка");
-    }
-  </script>
+  async function revokeAll(userId) {
+    const res = await fetch('/admin/revoke-access-all', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({user_id: userId})
+    });
+    if(res.ok) alert(`Доступ ко всем удалён у пользователя ${userId}`);
+  }
+</script>
 </body>
 </html>

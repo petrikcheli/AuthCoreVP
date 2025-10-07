@@ -1,68 +1,123 @@
-/* Общие настройки страницы */
-body {
-    margin: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f0f2f5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+/* Базовые стили */
+* {
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Контейнер формы */
-.login-container {
-    background-color: #fff;
-    padding: 40px 50px;
-    border-radius: 10px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-    text-align: center;
-    width: 350px;
+body {
+  margin: 0;
+  height: 100vh;
+  background-color: #F5F6FA;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #333;
+}
+
+/* Центровка обёртки */
+.login-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+/* Коробка формы */
+.login-box {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+  padding: 50px 60px;
+  width: 400px;
+  text-align: center;
+  border-top: 6px solid #4B6BFB;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.login-box:hover {
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 /* Логотип */
-.login-container img {
-    width: 100px;
-    margin-bottom: 20px;
+.logo img {
+  width: 150px;
+  height: auto;
+  margin-bottom: 25px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Заголовок */
-.login-container h2 {
-    margin-bottom: 30px;
-    color: #333;
+h2 {
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 30px;
+  font-size: 22px;
 }
 
-/* Поля ввода */
-.login-container input[type="text"],
-.login-container input[type="password"] {
-    width: 100%;
-    padding: 12px 15px;
-    margin: 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-    transition: 0.3s;
+/* Метки и поля */
+label {
+  display: block;
+  text-align: left;
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 6px;
 }
 
-.login-container input[type="text"]:focus,
-.login-container input[type="password"]:focus {
-    border-color: #3498db;
-    outline: none;
+input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background-color: #fff;
+  font-size: 14px;
+  margin-bottom: 18px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus {
+  border-color: #4B6BFB;
+  box-shadow: 0 0 0 3px #E8EAFF;
+  outline: none;
 }
 
 /* Кнопка */
-.login-container button {
-    width: 100%;
-    padding: 12px;
-    background-color: #3498db;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-top: 15px;
-    font-size: 16px;
-    transition: 0.3s;
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background-color: #4B6BFB;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
 }
 
-.login-container button:hover {
-    background-color: #2980b9;
+button:hover {
+  background-color: #5F7CFF;
+}
+
+button:active {
+  background-color: #3D5CE0;
+  transform: scale(0.98);
+}
+
+/* Hover-анимация для ввода */
+input:hover {
+  border-color: #94a3b8;
+}
+
+/* Адаптив */
+@media (max-width: 480px) {
+  .login-box {
+    width: 90%;
+    padding: 40px 30px;
+  }
+  .logo img {
+    width: 120px;
+  }
 }

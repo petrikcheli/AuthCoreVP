@@ -2,19 +2,27 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Admin Login</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <title>Вход администратора</title>
+  <link rel="stylesheet" href="/static/login.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="form-container">
-    <h2>Вход администратора</h2>
-    <form id="loginForm">
-      <label>Логин:</label>
-      <input type="text" id="username" required>
-      <label>Пароль:</label>
-      <input type="password" id="password" required>
-      <button type="submit">Войти</button>
-    </form>
+  <div class="login-wrapper">
+    <div class="login-box">
+      <div class="logo">
+        <img src="/static/logo.webp" alt="Логотип компании">
+      </div>
+      <h2>Вход администратора</h2>
+      <form id="loginForm">
+        <label for="username">Логин:</label>
+        <input type="text" id="username" placeholder="Введите логин" required>
+
+        <label for="password">Пароль:</label>
+        <input type="password" id="password" placeholder="Введите пароль" required>
+
+        <button type="submit">Войти</button>
+      </form>
+    </div>
   </div>
 
   <script>
