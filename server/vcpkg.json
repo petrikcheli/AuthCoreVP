@@ -1,0 +1,9 @@
+{
+  "dependencies": [
+    "crow",
+    "jwt-cpp",
+    "libsodium",
+    "sqlite-modern-cpp",
+    "nlohmann-json"
+  ]
+}

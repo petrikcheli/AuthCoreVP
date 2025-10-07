@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Контроллеры</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h2>Список контроллеров</h2>
+  <table>
+    <tr><th>ID</th><th>Название</th><th>Действия</th></tr>
+    {{#controllers}}
+    <tr>
+      <td>{{id}}</td>
+      <td>{{name}}</td>
+      <td><button onclick="deleteController({{id}})">Удалить</button></td>
+    </tr>
+    {{/controllers}}
+  </table>
+
+  <h3>Добавить контроллер</h3>
+  <input type="text" id="ctrlName" placeholder="Название">
+  <input type="text" id="ctrlSerial" placeholder="Serial Number">
+  <button onclick="addController()">Добавить</button>
+
+  <button onclick="location.href='/admin/panel'">Назад</button>
+
+  <script>
+    async function addController() {
+      const name = document.getElementById('ctrlName').value.trim();
+      const serial = document.getElementById('ctrlSerial').value.trim();
+
+      if (!name || !serial) {
+        alert("Введите название и serial контроллера");
+        return;
+      }
+
+      try {
+        const res = await fetch('/admin/add-controller', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name, serial})
+        });
+
+        if (res.ok) {
+          location.reload();
+        } else {
+          const text = await res.text();
+          alert("Ошибка при добавлении контроллера: " + text);
+        }
+      } catch (err) {
+        alert("Ошибка запроса: " + err);
+      }
+    }
+
+    async function deleteController(id) {
+      if (!confirm("Удалить контроллер?")) return;
+
+      try {
+        const res = await fetch('/admin/delete-controller', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({id})
+        });
+
+        if (res.ok) {
+          location.reload();
+        } else {
+          const text = await res.text();
+          alert("Ошибка при удалении контроллера: " + text);
+        }
+      } catch (err) {
+        alert("Ошибка запроса: " + err);
+      }
+    }
+  </script>
+</body>
+</html>

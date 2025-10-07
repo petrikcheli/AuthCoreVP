@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Пользователи</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h2>Список пользователей</h2>
+  <table>
+    <tr><th>ID</th><th>Имя пользователя</th><th>Роль</th><th>Действия</th></tr>
+    {{#users}}
+    <tr>
+      <td>{{id}}</td>
+      <td>{{username}}</td>
+      <td>{{role}}</td>
+      <td>
+        <button onclick="deleteUser({{id}})">Удалить</button>
+      </td>
+    </tr>
+    {{/users}}
+  </table>
+
+  <h3>Добавить пользователя</h3>
+  <input type="text" id="username" placeholder="Имя пользователя">
+  <input type="text" id="full_name" placeholder="Полное имя">
+  <input type="password" id="password" placeholder="Пароль">
+  <input type="text" id="role" placeholder="Роль (admin/operator)">
+  <button onclick="addUser()">Добавить</button>
+
+  <button onclick="location.href='/admin/panel'">Назад</button>
+
+  <script>
+    async function addUser() {
+      const username = document.getElementById('username').value;
+      const full_name = document.getElementById('full_name').value;
+      const password = document.getElementById('password').value;
+      const role = document.getElementById('role').value;
+
+      if(!username || !password) {
+        alert("Имя пользователя и пароль обязательны!");
+        return;
+      }
+
+      const res = await fetch('/admin/add-user', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username, full_name, password, role})
+      });
+
+      if(res.ok) location.reload();
+      else alert("Не удалось добавить пользователя");
+    }
+
+    async function deleteUser(id) {
+      const res = await fetch('/admin/delete-user', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({id})
+      });
+      if(res.ok) location.reload();
+      else alert("Не удалось удалить пользователя");
+    }
+  </script>
+</body>
+</html>

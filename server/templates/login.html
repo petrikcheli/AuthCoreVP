@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Login</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="form-container">
+    <h2>Вход администратора</h2>
+    <form id="loginForm">
+      <label>Логин:</label>
+      <input type="text" id="username" required>
+      <label>Пароль:</label>
+      <input type="password" id="password" required>
+      <button type="submit">Войти</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const data = {
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+      };
+      const res = await fetch('/admin/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      if (res.status === 302 || res.ok) {
+        window.location.href = '/admin/panel';
+      } else {
+        alert("Неверный логин или пароль");
+      }
+    });
+  </script>
+</body>
+</html>

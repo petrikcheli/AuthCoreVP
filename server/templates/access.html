@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Доступ сотрудников</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h2>Управление доступом сотрудников к контроллерам</h2>
+
+  <!-- Выдать доступ к конкретному контроллеру -->
+  <h3>Выдать доступ к конкретному контроллеру</h3>
+  <select id="userSelect">
+    {{#users}}
+      <option value="{{id}}">{{username}}</option>
+    {{/users}}
+  </select>
+  <select id="controllerSelect">
+    {{#controllers}}
+      <option value="{{id}}">{{name}}</option>
+    {{/controllers}}
+  </select>
+  <button onclick="grantAccess()">Выдать доступ</button>
+
+  <!-- Удалить доступ к конкретному контроллеру -->
+  <h3>Удалить доступ к конкретному контроллеру</h3>
+  <select id="userSelectRevoke">
+    {{#users}}
+      <option value="{{id}}">{{username}}</option>
+    {{/users}}
+  </select>
+  <select id="controllerSelectRevoke">
+    {{#controllers}}
+      <option value="{{id}}">{{name}}</option>
+    {{/controllers}}
+  </select>
+  <button onclick="revokeAccess()">Удалить доступ</button>
+
+  <!-- Выдать доступ ко всем контроллерам -->
+  <h3>Выдать доступ ко всем контроллерам</h3>
+  <select id="userSelectAllGrant">
+    {{#users}}
+      <option value="{{id}}">{{username}}</option>
+    {{/users}}
+  </select>
+  <button onclick="grantAll()">Дать доступ ко всем</button>
+
+  <!-- Удалить доступ ко всем контроллерам -->
+  <h3>Удалить доступ ко всем контроллерам</h3>
+  <select id="userSelectAllRevoke">
+    {{#users}}
+      <option value="{{id}}">{{username}}</option>
+    {{/users}}
+  </select>
+  <button onclick="revokeAll()">Удалить доступ ко всем</button>
+
+  <button onclick="location.href='/admin/panel'">Назад</button>
+
+  <script>
+    async function grantAccess() {
+      const user_id = document.getElementById("userSelect").value;
+      const controller_id = document.getElementById("controllerSelect").value;
+      const res = await fetch('/admin/grant-access', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id, controller_id})
+      });
+      if(res.ok) alert("Доступ выдан");
+      else alert("Ошибка");
+    }
+
+    async function revokeAccess() {
+      const user_id = document.getElementById("userSelectRevoke").value;
+      const controller_id = document.getElementById("controllerSelectRevoke").value;
+      const res = await fetch('/admin/revoke-access', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id, controller_id})
+      });
+      if(res.ok) alert("Доступ удалён");
+      else alert("Ошибка");
+    }
+
+    async function grantAll() {
+      const user_id = document.getElementById("userSelectAllGrant").value;
+      const res = await fetch('/admin/grant-access-all', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id})
+      });
+      if(res.ok) alert("Доступ ко всем выдан");
+      else alert("Ошибка");
+    }
+
+    async function revokeAll() {
+      const user_id = document.getElementById("userSelectAllRevoke").value;
+      const res = await fetch('/admin/revoke-access-all', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({user_id})
+      });
+      if(res.ok) alert("Доступ ко всем удалён");
+      else alert("Ошибка");
+    }
+  </script>
+</body>
+</html>

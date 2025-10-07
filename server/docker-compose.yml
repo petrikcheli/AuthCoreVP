@@ -1,0 +1,11 @@
+version: '3.10'
+
+services:
+  cpp-server:
+    build: .
+    container_name: cpp-server
+    restart: always
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./:/app
