@@ -12,16 +12,24 @@ find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(jwt-cpp CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
-add_executable(server
+
+# Собираем все исходники, включая файлы из db/
+file(GLOB SOURCES
     main.cpp
-    data_base.h
-    password_hasher.h
-    jwt_manager.h
+    # password_hasher.h
+    # jwt_manager.h
+    db/*.cpp
 )
+
+# Создаём исполняемый файл
+add_executable(server ${SOURCES})
+
+# Указываем, где искать заголовочные файлы
+target_include_directories(server PRIVATE db jwt hasher)
+target_include_directories(server PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 
 target_link_libraries(server PRIVATE nlohmann_json::nlohmann_json)
 target_link_libraries(server PRIVATE jwt-cpp::jwt-cpp)
-target_include_directories(server PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 target_link_libraries(server PRIVATE unofficial::sqlite3::sqlite3)
 target_link_libraries(server PRIVATE Crow::Crow asio::asio)
 target_link_libraries(server PRIVATE unofficial-sodium::sodium)

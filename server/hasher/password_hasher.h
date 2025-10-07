@@ -33,7 +33,7 @@ public:
     }
 
     // Проверка пароля. Возвращает true, если пароль совпадает с хэшем
-    static bool verify(const std::string &hashed, const std::string &password) {
+    static bool verify(const std::string &password, const std::string &hashed) {
         return crypto_pwhash_str_verify(
                    hashed.c_str(),
                    password.c_str(),
