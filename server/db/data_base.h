@@ -79,6 +79,4 @@ private:
     bool must_change_password(const std::string& username);
 
     bool ensure_default_admin();
-
-    void ensure_default_roles();
 };

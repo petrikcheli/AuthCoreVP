@@ -6,7 +6,6 @@ data_base::data_base(const std::string& filename)
 {
     init_tables();
     ensure_default_admin();
-    ensure_default_roles();
 }
 
 void data_base::init_tables() {
