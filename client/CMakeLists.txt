@@ -17,7 +17,6 @@ find_package(GTest REQUIRED)
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/api
-    ${CMAKE_CURRENT_SOURCE_DIR}/dialog
     ${CMAKE_CURRENT_SOURCE_DIR}/mainwindow
 )
 

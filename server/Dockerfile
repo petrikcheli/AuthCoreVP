@@ -30,7 +30,8 @@ RUN ${VCPKG_ROOT}/vcpkg install \
     jwt-cpp \
     libsodium \
     sqlite3 sqlite-modern-cpp \
-    nlohmann-json
+    nlohmann-json \
+    boost
 
 WORKDIR /app
 
