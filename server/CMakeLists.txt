@@ -26,13 +26,15 @@ file(GLOB SOURCES
     db/*.h
     cli/*.h
     cli/*.cpp
+    rate_limiter/*.h
+    rate_limiter/*.cpp
 )
 
 # Создаём исполняемый файл
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Указываем, где искать заголовочные файлы
-target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher routes cli)
+target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher routes cli rate_limiter)
 target_include_directories(${PROJECT_NAME} PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

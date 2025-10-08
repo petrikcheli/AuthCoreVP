@@ -1,6 +1,7 @@
 #include "routes.h"
 #include "password_hasher.h" // если нужно
 #include "crow/mustache.h"
+#include "rate_limiter.h"
 
 #include <optional>
 
@@ -36,6 +37,7 @@ std::optional<std::string> verify_jwt(const crow::request& req, jwt_manager& jwt
 
 void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
 
+    simple_rate_limiter limiter(5, 60, 60);
     // ---------- AUTH ----------
     CROW_ROUTE(app, "/admin/login").methods("GET"_method)([](){
         return crow::mustache::load("login.html").render();
@@ -54,7 +56,11 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
     // api/admin/revoke-access-all
 
     CROW_ROUTE(app, "/admin/login").methods("POST"_method)(
-        [&db, &jwt](const crow::request& req){
+        [&db, &jwt, &limiter](const crow::request& req){
+            std::string client_ip = req.remote_ip_address;
+            if(!limiter.allow(client_ip)){
+                return crow::response(429, "Too many attempts, try later");
+            }
             std::string username;
             std::string password;
 
@@ -73,8 +79,13 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
             CROW_LOG_INFO << "Parsed username=" << username << " password=" << password;
 
             auto user = db.authenticate(username, password);
-            if(!user || user->role != "admin")
+            if(!user || user->role != "admin"){
+                limiter.add_failure(client_ip);
+                std::this_thread::sleep_for(std::chrono::seconds(1));
                 return crow::response(401, "Unauthorized");
+            }
+
+            limiter.add_success(client_ip);
 
             std::string token = jwt.create_token(username, 3600);
             crow::response res(302);
@@ -357,7 +368,11 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
 
     //API
     // Авторизация администратора
-    CROW_ROUTE(app, "/api/admin/login").methods("POST"_method)([&db, &jwt](const crow::request& req){
+    CROW_ROUTE(app, "/api/admin/login").methods("POST"_method)([&db, &jwt, &limiter](const crow::request& req){
+        std::string client_ip = req.remote_ip_address;
+        if(!limiter.allow(client_ip)){
+            return crow::response(429, "Too many attempts, try later");
+        }
         auto body = nlohmann::json::parse(req.body, nullptr, false);
         if (body.is_discarded())
             return crow::response(400, "Invalid JSON");
@@ -366,8 +381,12 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
         std::string password = body.value("password", "");
 
         auto user = db.authenticate(username, password);
-        if (!user || user->role != "admin")
+        if (!user || user->role != "admin"){
+            limiter.add_failure(client_ip);
+            std::this_thread::sleep_for(std::chrono::seconds(1));
             return crow::response(401, "Unauthorized");
+        }
+        limiter.add_success(client_ip);
 
         std::string token = jwt.create_token(username, 3600 * 24); // сутки
         nlohmann::json res = {{"token", token}, {"username", username}};
