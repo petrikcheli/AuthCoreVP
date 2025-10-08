@@ -365,65 +365,80 @@ void MainWindow::buildUi() {
     editRoleAccessWidget_ = new QWidget();
     {
         auto lay = new QVBoxLayout(editRoleAccessWidget_);
-    
-        // Заголовок
-        lay->addWidget(new QLabel("Редактирование доступов для роли (заглушка)"));
-    
-        // Таблица прав доступа
+
+        lay->addWidget(new QLabel("Редактирование доступов для ролей"));
+
         auto table = new QTableWidget();
         table->setColumnCount(3);
         table->setHorizontalHeaderLabels({"Роль", "Просмотр всех пользователей", "Редактирование контроллера"});
-        // table->horizontalHeader()->setStretchLastSection(true);
         table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
         table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
         table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
         table->verticalHeader()->setDefaultSectionSize(45);
-    
-        // Заглушка данных
-        QStringList roles = {"engineer", "guest"};
-        table->setRowCount(roles.size());
-    
-        for (int row = 0; row < roles.size(); ++row) {
-            // Название роли
-            table->setItem(row, 0, new QTableWidgetItem(roles[row]));
-    
-            // Просмотр всех пользователей
-            auto comboView = new QComboBox();
-            comboView->addItem("Разрешён");
-            comboView->addItem("Запрещён");
-            if (roles[row] == "guest") comboView->setCurrentText("Разрешён"); // guest может только смотреть
-            else comboView->setCurrentText("Разрешён"); // engineer может смотреть
-            table->setCellWidget(row, 1, comboView);
-    
-            // Редактирование контроллера
-            auto comboEdit = new QComboBox();
-            comboEdit->addItem("Разрешён");
-            comboEdit->addItem("Запрещён");
-            if (roles[row] == "guest") comboEdit->setCurrentText("Запрещён"); // guest не редактирует
-            else comboEdit->setCurrentText("Разрешён"); // engineer может редактировать
-            table->setCellWidget(row, 2, comboEdit);
-        }
-    
         lay->addWidget(table);
-    
-        // Кнопка "Сохранить" (ещё не реализовано)
+
+        // Кнопка "Обновить список ролей"
+        auto btnRefresh = new QPushButton("Обновить список ролей");
+        lay->addWidget(btnRefresh);
+        connect(btnRefresh, &QPushButton::clicked, this, [this, table]() {
+            std::string err;
+            auto rolesJson = api_->getRoles(token_.toStdString(), err);
+            if (!err.empty()) {
+                QMessageBox::warning(this, "Ошибка", QString::fromStdString(err));
+                return;
+            }
+
+            table->setRowCount((int)rolesJson.size());
+            for (int i = 0; i < (int)rolesJson.size(); ++i) {
+                auto& r = rolesJson[i];
+                QString roleName = QString::fromStdString(r["name"].get<std::string>());
+                table->setItem(i, 0, new QTableWidgetItem(roleName));
+
+                auto comboView = new QComboBox();
+                comboView->addItem("Разрешён");
+                comboView->addItem("Запрещён");
+                comboView->setCurrentText(r["user_list_access"].get<bool>() ? "Разрешён" : "Запрещён");
+                table->setCellWidget(i, 1, comboView);
+
+                auto comboEdit = new QComboBox();
+                comboEdit->addItem("Разрешён");
+                comboEdit->addItem("Запрещён");
+                comboEdit->setCurrentText(r["controller_access"].get<bool>() ? "Разрешён" : "Запрещён");
+                table->setCellWidget(i, 2, comboEdit);
+            }
+        });
+
+        // Кнопка "Сохранить изменения"
         auto btnSave = new QPushButton("Сохранить изменения");
         lay->addWidget(btnSave);
-        connect(btnSave, &QPushButton::clicked, this, [table]() {
-            // Пример чтения выбранных значений из таблицы
+        connect(btnSave, &QPushButton::clicked, this, [this, table]() {
             int rows = table->rowCount();
-            QString result;
             for (int i = 0; i < rows; ++i) {
-                QString role = table->item(i, 0)->text();
-                auto viewCombo = qobject_cast<QComboBox*>(table->cellWidget(i, 1));
-                auto editCombo = qobject_cast<QComboBox*>(table->cellWidget(i, 2));
-                if (!viewCombo || !editCombo) continue;
-                result += role + ": Просмотр=" + viewCombo->currentText() + ", Редактирование=" + editCombo->currentText() + "\n";
+                QString roleName = table->item(i, 0)->text();
+                auto comboView = qobject_cast<QComboBox*>(table->cellWidget(i, 1));
+                auto comboEdit = qobject_cast<QComboBox*>(table->cellWidget(i, 2));
+                if (!comboView || !comboEdit) continue;
+
+                nlohmann::json updateJson = {
+                    {"name", roleName.toStdString()},
+                    {"user_list_access", comboView->currentText() == "Разрешён"},
+                    {"controller_access", comboEdit->currentText() == "Разрешён"}
+                };
+
+                std::string err;
+                if (!api_->updateRole(token_.toStdString(), updateJson, err)) {
+                    QMessageBox::warning(nullptr, "Ошибка", QString::fromStdString(err));
+                    return;
+                }
             }
-            QMessageBox::information(nullptr, "Выбранные права (заглушка)", result);
+            QMessageBox::information(nullptr, "ОК", "Все изменения сохранены");
         });
+
+        // Сразу загружаем роли при открытии вкладки
+        btnRefresh->click();
     }
     mainStack_->addWidget(editRoleAccessWidget_);
+
     
 
     v->addWidget(mainStack_);

@@ -2,6 +2,7 @@ project(server LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(Boost_USE_STATIC_LIBS ON)
 
 find_package(Crow CONFIG REQUIRED)
 find_package(jwt-cpp CONFIG REQUIRED)
@@ -10,7 +11,7 @@ find_path(SQLITE_MODERN_CPP_INCLUDE_DIRS "sqlite_modern_cpp.h")
 find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(jwt-cpp CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-
+find_package(Boost REQUIRED COMPONENTS program_options)
 
 # Собираем все исходники, включая файлы из db/
 file(GLOB SOURCES
@@ -23,13 +24,15 @@ file(GLOB SOURCES
     routes/*.h
     db/*.cpp
     db/*.h
+    cli/*.h
+    cli/*.cpp
 )
 
 # Создаём исполняемый файл
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Указываем, где искать заголовочные файлы
-target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher routes)
+target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher routes cli)
 target_include_directories(${PROJECT_NAME} PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -40,6 +43,12 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     asio::asio
     unofficial-sodium::sodium
 )
+
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+    target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${Boost_LIBRARIES})
+endif()
 
 # todo: сделать условие для unix
 if (WIN32)

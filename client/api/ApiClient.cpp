@@ -1,4 +1,5 @@
 #include "ApiClient.h"
+
 #include <curlpp/cURLpp.hpp>
 #include <curlpp/Easy.hpp>
 #include <curlpp/Options.hpp>
@@ -248,6 +249,32 @@ bool ApiClient::revokeAllControllers(const std::string& token, int userId, std::
     try {
         std::string header = "Authorization: Bearer " + token;
         postJson(baseUrl + "/api/admin/revoke-all-controllers", body.dump(), {header});
+        return true;
+    } catch (std::exception& e) {
+        err = e.what();
+        return false;
+    }
+}
+
+// изменение доступов у ролей
+
+// Получение списка ролей
+std::vector<nlohmann::json> ApiClient::getRoles(const std::string& token, std::string& err) {
+    try {
+        std::string header = "Authorization: Bearer " + token;
+        auto resp = getJson(baseUrl + "/api/roles", {header});
+        return nlohmann::json::parse(resp).get<std::vector<nlohmann::json>>();
+    } catch (std::exception& e) {
+        err = e.what();
+        return {};
+    }
+}
+
+// Обновление роли
+bool ApiClient::updateRole(const std::string& token, const nlohmann::json& roleSpec, std::string& err) {
+    try {
+        std::string header = "Authorization: Bearer " + token;
+        postJson(baseUrl + "/api/roles/update", roleSpec.dump(), {header});
         return true;
     } catch (std::exception& e) {
         err = e.what();
