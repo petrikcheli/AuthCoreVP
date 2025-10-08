@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Roles Management</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; margin: 20px auto; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        button { padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center;">Roles Management</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Controller Access</th>
+                <th>User List Access</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="rolesTable">
+        </tbody>
+    </table>
+
+    <h3 style="text-align: center;">Add New Role</h3>
+    <div style="text-align: center;">
+        <input type="text" id="roleName" placeholder="Role Name">
+        <label><input type="checkbox" id="controllerAccess"> Controller</label>
+        <label><input type="checkbox" id="userListAccess"> User List</label>
+        <button onclick="createRole()">Add Role</button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem("jwt"); // JWT токен
+
+        async function fetchRoles() {
+            const res = await fetch("/api/roles", {
+                headers: { "Authorization": "Bearer " + token }
+            });
+            if (!res.ok) { alert("Failed to fetch roles"); return; }
+            const roles = await res.json();
+            const table = document.getElementById("rolesTable");
+            table.innerHTML = "";
+            roles.forEach(r => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${r.name}</td>
+                    <td>${r.controller_access ? "Yes" : "No"}</td>
+                    <td>${r.user_list_access ? "Yes" : "No"}</td>
+                    <td>
+                        <button onclick="updateRole('${r.name}')">Update</button>
+                        <button onclick="deleteRole('${r.name}')">Delete</button>
+                    </td>`;
+                table.appendChild(tr);
+            });
+        }
+
+        async function createRole() {
+            const name = document.getElementById("roleName").value;
+            const controller_access = document.getElementById("controllerAccess").checked;
+            const user_list_access = document.getElementById("userListAccess").checked;
+
+            const res = await fetch("/api/roles/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                body: JSON.stringify({ name, controller_access, user_list_access })
+            });
+            if(res.ok) fetchRoles();
+            else alert("Failed to create role");
+        }
+
+        async function updateRole(name) {
+            const controller_access = confirm("Grant controller access?");
+            const user_list_access = confirm("Grant user list access?");
+
+            const res = await fetch("/api/roles/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                body: JSON.stringify({ name, controller_access, user_list_access })
+            });
+            if(res.ok) fetchRoles();
+            else alert("Failed to update role");
+        }
+
+        async function deleteRole(name) {
+            if(!confirm("Delete role " + name + "?")) return;
+            const res = await fetch("/api/roles/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+                body: JSON.stringify({ name })
+            });
+            if(res.ok) fetchRoles();
+            else alert("Failed to delete role");
+        }
+
+        fetchRoles(); // загрузка таблицы при открытии
+    </script>
+</body>
+</html>

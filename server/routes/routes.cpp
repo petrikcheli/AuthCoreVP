@@ -27,6 +27,13 @@ std::optional<std::string> verify_jwt_from_header(const crow::request& req, jwt_
     return jwt.get_username(token);
 }
 
+std::optional<std::string> verify_jwt(const crow::request& req, jwt_manager& jwt) {
+    auto username_opt = verify_jwt_from_header(req, jwt);
+    if(!username_opt)
+        username_opt = verify_jwt_from_cookie(req, jwt);
+    return username_opt;
+}
+
 void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
 
     // ---------- AUTH ----------
@@ -301,6 +308,30 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
         }
         );
 
+    CROW_ROUTE(app, "/admin/roles").methods("GET"_method)([&db, &jwt](const crow::request& req){
+        auto username_opt = verify_jwt_from_cookie(req, jwt);
+        if (!username_opt)
+            return crow::response(401, "Unauthorized");
+
+        std::vector<SimpleRole> roles;
+        db.get_all_simple_roles(roles);
+
+        crow::mustache::context ctx;
+        std::vector<crow::mustache::context> roles_list;
+
+        for(auto& r : roles) {
+            roles_list.push_back({
+                {"name", r.name},
+                {"controller_access", r.controller_access ? "Yes" : "No"},
+                {"user_list_access", r.user_list_access ? "Yes" : "No"}
+            });
+        }
+
+        ctx["roles"] = std::move(roles_list);
+        return crow::response(crow::mustache::load("roles.html").render(ctx));
+    });
+
+
     CROW_ROUTE(app, "/admin/register/api").methods("POST"_method)(
         [&db, &jwt](const crow::request& req){
             auto body = nlohmann::json::parse(req.body, nullptr, false);
@@ -517,74 +548,70 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
         return ok ? crow::response(200, "Access revoked from all") : crow::response(400, "Failed");
     });
 
-    CROW_ROUTE(app, "/api/roles").methods("GET"_method)([&db, &jwt](const crow::request& req) {
-        auto username_opt = verify_jwt_from_header(req, jwt);
-        if (!username_opt) return crow::response(401, "Unauthorized");
+    // Получить все роли
+    CROW_ROUTE(app, "/api/roles").methods("GET"_method)([&db, &jwt](const crow::request& req){
+        if(!verify_jwt(req, jwt)) return crow::response(401, "Unauthorized");
 
         std::vector<SimpleRole> roles;
         db.get_all_simple_roles(roles);
 
         nlohmann::json arr = nlohmann::json::array();
-        for (auto& r : roles) {
+        for(auto& r : roles)
             arr.push_back({
-                {"id", r.id},
                 {"name", r.name},
                 {"controller_access", r.controller_access},
                 {"user_list_access", r.user_list_access}
             });
-        }
 
         return crow::response(arr.dump());
     });
 
-    CROW_ROUTE(app, "/api/roles/create").methods("POST"_method)([&db, &jwt](const crow::request& req) {
-        auto username_opt = verify_jwt_from_header(req, jwt);
-        if (!username_opt) return crow::response(401, "Unauthorized");
+    // Создать роль
+    CROW_ROUTE(app, "/api/roles/create").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        if(!verify_jwt(req, jwt)) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
-        if (body.is_discarded()) return crow::response(400, "Invalid JSON");
+        if(body.is_discarded()) return crow::response(400, "Invalid JSON");
 
         std::string name = body.value("name", "");
         bool controller_access = body.value("controller_access", false);
         bool user_list_access = body.value("user_list_access", false);
 
-        if (name.empty()) return crow::response(400, "Missing role name");
+        if(name.empty()) return crow::response(400, "Missing role name");
 
         bool ok = db.add_simple_role(name, controller_access, user_list_access);
-        return ok ? crow::response(200, "Role created") : crow::response(400, "Failed to create role");
+        return ok ? crow::response(200, "Role created") : crow::response(400, "Failed");
     });
 
-    CROW_ROUTE(app, "/api/roles/update").methods("POST"_method)([&db, &jwt](const crow::request& req) {
-        auto username_opt = verify_jwt_from_header(req, jwt);
-        if (!username_opt) return crow::response(401, "Unauthorized");
+    // Обновить роль
+    CROW_ROUTE(app, "/api/roles/update").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        if(!verify_jwt(req, jwt)) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
-        if (body.is_discarded()) return crow::response(400, "Invalid JSON");
+        if(body.is_discarded()) return crow::response(400, "Invalid JSON");
 
         std::string name = body.value("name", "");
         bool controller_access = body.value("controller_access", false);
         bool user_list_access = body.value("user_list_access", false);
 
-        if (name.empty()) return crow::response(400, "Missing role name");
+        if(name.empty()) return crow::response(400, "Missing role name");
 
         bool ok = db.update_simple_role(name, controller_access, user_list_access);
-        return ok ? crow::response(200, "Role updated") : crow::response(400, "Failed to update role");
+        return ok ? crow::response(200, "Role updated") : crow::response(400, "Failed");
     });
 
-    CROW_ROUTE(app, "/api/roles/delete").methods("POST"_method)([&db, &jwt](const crow::request& req) {
-        auto username_opt = verify_jwt_from_header(req, jwt);
-        if (!username_opt) return crow::response(401, "Unauthorized");
+    // Удалить роль
+    CROW_ROUTE(app, "/api/roles/delete").methods("POST"_method)([&db, &jwt](const crow::request& req){
+        if(!verify_jwt(req, jwt)) return crow::response(401, "Unauthorized");
 
         auto body = nlohmann::json::parse(req.body, nullptr, false);
-        if (body.is_discarded()) return crow::response(400, "Invalid JSON");
+        if(body.is_discarded()) return crow::response(400, "Invalid JSON");
 
         std::string name = body.value("name", "");
-        if (name.empty()) return crow::response(400, "Missing role name");
+        if(name.empty()) return crow::response(400, "Missing role name");
 
         bool ok = db.delete_simple_role(name);
-        return ok ? crow::response(200, "Role deleted") : crow::response(400, "Failed to delete role");
+        return ok ? crow::response(200, "Role deleted") : crow::response(400, "Failed");
     });
-
-
 
 }
