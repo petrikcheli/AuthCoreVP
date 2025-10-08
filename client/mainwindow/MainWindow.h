@@ -1,5 +1,8 @@
 #pragma once
+#include "ApiClient.h"
+
 #include <QMainWindow>
+#include <QLineEdit>
 #include <memory>
 
 class ApiClient;
@@ -33,6 +36,7 @@ private:
     void buildUi();
     void loadTopCombos();
 
+
 private:
     ApiClient* api_;
     QString token_;
@@ -47,4 +51,8 @@ private:
     QWidget* createRoleWidget_;
     QWidget* grantWidget_;
     QWidget* revokeWidget_;
+    QWidget* deleteUserWidget_;
+    QWidget* editRoleAccessWidget_;
+
+    QLineEdit* createSearchEdit(QTableWidget* table, std::vector<User>& users);
 };

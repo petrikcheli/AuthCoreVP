@@ -378,6 +378,8 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
         std::string full_name = body.value("full_name", "");
         std::string password = body.value("password", "");
         std::string role = body.value("role", "operator");
+        
+        CROW_LOG_INFO << "Parsed username=" << username << " full_name: " << full_name << " password=" << password;
 
         if (username.empty() || full_name.empty() || password.empty())
             return crow::response(400, "Missing fields");

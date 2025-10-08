@@ -26,10 +26,11 @@ int main(int argc, char** argv) {
 
     MainWindow w(&api, token);
     QObject::connect(&w, &MainWindow::logoutRequested, [&]() {
-        // при выходе можно показать диалог заново
+        w.hide();
         AuthDialog auth2(&api);
         if (auth2.exec() == QDialog::Accepted) {
             w.setToken(auth2.token());
+            w.show();
         } else {
             w.close(); // если отмена — закрываем приложение
         }

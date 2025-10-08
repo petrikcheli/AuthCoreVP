@@ -8,7 +8,6 @@
 #include <QVBoxLayout>
 #include <QStackedWidget>
 #include <QLabel>
-#include <QLineEdit>
 #include <QTableWidget>
 #include <QHeaderView>
 #include <QMessageBox>
@@ -35,13 +34,14 @@ void MainWindow::buildUi() {
     // Верхняя панель
     auto top = new QHBoxLayout();
     usersCombo_ = new QComboBox();
-    // usersCombo_->addItem("Пользователи:");
     usersCombo_->addItem("Добавить пользователя");
     usersCombo_->addItem("Посмотреть всех пользователей");
     usersCombo_->addItem("Изменить пользователя");
     usersCombo_->addItem("Создание роли");
-    usersCombo_->addItem("Добавить доступ сотруднику ко всем контроллерам");
-    usersCombo_->addItem("Удалить доступ сотруднику от всех контроллеров");
+    usersCombo_->addItem("Добавить доступ пользователю ко всем контроллерам");
+    usersCombo_->addItem("Удалить доступ пользователю от всех контроллеров");
+    usersCombo_->addItem("Удалить пользователя");
+    usersCombo_->addItem("Редактирование доступа для роли");
 
     controllersCombo_ = new QComboBox();
     controllersCombo_->addItem("Контроллеры:");
@@ -63,19 +63,23 @@ void MainWindow::buildUi() {
         auto lay = new QVBoxLayout(addUserWidget_);
         lay->addWidget(new QLabel("Добавить пользователя"));
         auto username = new QLineEdit();
-        username->setPlaceholderText("Имя");
+        username->setPlaceholderText("username");
         auto password = new QLineEdit();
         password->setPlaceholderText("Пароль");
+        auto fullName = new QLineEdit();
+        fullName->setPlaceholderText("Имя Фамилия");
         auto role = new QLineEdit();
         role->setPlaceholderText("Роль");
         auto btn = new QPushButton("Создать");
         lay->addWidget(username);
         lay->addWidget(password);
+        lay->addWidget(fullName);
         lay->addWidget(role);
         lay->addWidget(btn);
-        connect(btn, &QPushButton::clicked, this, [this, username, password, role]() {
+        connect(btn, &QPushButton::clicked, this, [this, username, password, fullName, role]() {
             User u;
             u.username = username->text().toStdString();
+            u.full_name = fullName->text().toStdString();
             u.role = role->text().toStdString();
             std::string err;
             if (api_->addUser(token_.toStdString(), u, password->text().toStdString(), err)) {
@@ -91,7 +95,6 @@ void MainWindow::buildUi() {
     viewUsersWidget_ = new QWidget();
     {
         auto lay = new QVBoxLayout(viewUsersWidget_);
-        auto refresh = new QPushButton("Обновить список");
         auto table = new QTableWidget();
 
         // Скрываем левый вертикальный заголовок и угол
@@ -99,8 +102,17 @@ void MainWindow::buildUi() {
         table->setCornerButtonEnabled(false);
         
         table->setColumnCount(3);
-        table->setHorizontalHeaderLabels({"ID","Имя","Роль"});
+        table->setHorizontalHeaderLabels({"Имя","Роль","Имя Фамилия"});
         table->horizontalHeader()->setStretchLastSection(true);
+
+        std::vector<User> allUsers;
+        auto searchEdit = createSearchEdit(table, allUsers);
+        lay->addWidget(searchEdit);
+
+        auto refresh = new QPushButton("Обновить список");
+        lay->addWidget(refresh);
+        lay->addWidget(table);
+
         lay->addWidget(refresh);
         lay->addWidget(table);
         connect(refresh, &QPushButton::clicked, this, [this, table]() {
@@ -111,10 +123,10 @@ void MainWindow::buildUi() {
                 return;
             }
             table->setRowCount((int)users.size());
-            for (int i=0;i<(int)users.size();++i) {
-                table->setItem(i,0,new QTableWidgetItem(QString::number(users[i].id)));
-                table->setItem(i,1,new QTableWidgetItem(QString::fromStdString(users[i].username)));
-                table->setItem(i,2,new QTableWidgetItem(QString::fromStdString(users[i].role)));
+            for (int i=0; i < (int)users.size(); ++i) {
+                table->setItem(i,0,new QTableWidgetItem(QString::fromStdString(users[i].username)));
+                table->setItem(i,1,new QTableWidgetItem(QString::fromStdString(users[i].role)));
+                table->setItem(i,2,new QTableWidgetItem(QString::fromStdString(users[i].full_name)));
             }
         });
     }
@@ -127,7 +139,7 @@ void MainWindow::buildUi() {
         auto refresh = new QPushButton("Загрузить всех пользователей");
         auto list = new QTableWidget();
         list->setColumnCount(3);
-        list->setHorizontalHeaderLabels({"ID","Имя","Роль"});
+        list->setHorizontalHeaderLabels({"Имя","Роль","Имя Фамилия"});
         list->horizontalHeader()->setStretchLastSection(true);
         lay->addWidget(refresh);
         lay->addWidget(list);
@@ -137,9 +149,9 @@ void MainWindow::buildUi() {
             if (!err.empty()) { QMessageBox::warning(this, "Ошибка", QString::fromStdString(err)); return; }
             list->setRowCount((int)users.size());
             for (int i=0;i<(int)users.size();++i) {
-                list->setItem(i,0,new QTableWidgetItem(QString::number(users[i].id)));
-                list->setItem(i,1,new QTableWidgetItem(QString::fromStdString(users[i].username)));
-                list->setItem(i,2,new QTableWidgetItem(QString::fromStdString(users[i].role)));
+                list->setItem(i,0,new QTableWidgetItem(QString::fromStdString(users[i].username)));
+                list->setItem(i,1,new QTableWidgetItem(QString::fromStdString(users[i].role)));
+                list->setItem(i,2,new QTableWidgetItem(QString::fromStdString(users[i].full_name)));
             }
         });
         connect(list, &QTableWidget::cellDoubleClicked, this, [this, list](int row, int col){
@@ -218,7 +230,8 @@ void MainWindow::buildUi() {
         auto btnLoad = new QPushButton("Загрузить сотрудников");
         auto list = new QTableWidget();
         list->setColumnCount(3);
-        list->setHorizontalHeaderLabels({"ID","Имя","Роль"});
+        list->setHorizontalHeaderLabels({"Имя","Роль","Имя Фамилия"});
+        list->horizontalHeader()->setStretchLastSection(true);
         auto btnGrant = new QPushButton("Предоставить доступ ко всем контроллерам выбранному сотруднику");
         lay->addWidget(btnLoad);
         lay->addWidget(list);
@@ -229,9 +242,9 @@ void MainWindow::buildUi() {
             if (!err.empty()) { QMessageBox::warning(this, "Ошибка", QString::fromStdString(err)); return; }
             list->setRowCount((int)users.size());
             for (int i=0;i<(int)users.size();++i) {
-                list->setItem(i,0,new QTableWidgetItem(QString::number(users[i].id)));
-                list->setItem(i,1,new QTableWidgetItem(QString::fromStdString(users[i].username)));
-                list->setItem(i,2,new QTableWidgetItem(QString::fromStdString(users[i].role)));
+                list->setItem(i,0,new QTableWidgetItem(QString::fromStdString(users[i].username)));
+                list->setItem(i,1,new QTableWidgetItem(QString::fromStdString(users[i].role)));
+                list->setItem(i,2,new QTableWidgetItem(QString::fromStdString(users[i].full_name)));
             }
         });
         connect(btnGrant, &QPushButton::clicked, this, [this, list]() {
@@ -259,7 +272,8 @@ void MainWindow::buildUi() {
         auto btnLoad = new QPushButton("Загрузить сотрудников");
         auto list = new QTableWidget();
         list->setColumnCount(3);
-        list->setHorizontalHeaderLabels({"ID","Имя","Роль"});
+        list->setHorizontalHeaderLabels({"Имя","Роль","Имя Фамилия"});
+        list->horizontalHeader()->setStretchLastSection(true);
         auto btnRevoke = new QPushButton("Удалить доступ ко всем контроллерам у выбранного сотрудника");
         lay->addWidget(btnLoad);
         lay->addWidget(list);
@@ -270,9 +284,9 @@ void MainWindow::buildUi() {
             if (!err.empty()) { QMessageBox::warning(this, "Ошибка", QString::fromStdString(err)); return; }
             list->setRowCount((int)users.size());
             for (int i=0;i<(int)users.size();++i) {
-                list->setItem(i,0,new QTableWidgetItem(QString::number(users[i].id)));
-                list->setItem(i,1,new QTableWidgetItem(QString::fromStdString(users[i].username)));
-                list->setItem(i,2,new QTableWidgetItem(QString::fromStdString(users[i].role)));
+                list->setItem(i,0,new QTableWidgetItem(QString::fromStdString(users[i].username)));
+                list->setItem(i,1,new QTableWidgetItem(QString::fromStdString(users[i].role)));
+                list->setItem(i,2,new QTableWidgetItem(QString::fromStdString(users[i].full_name)));
             }
         });
         connect(btnRevoke, &QPushButton::clicked, this, [this, list]() {
@@ -292,6 +306,125 @@ void MainWindow::buildUi() {
         });
     }
     mainStack_->addWidget(revokeWidget_);
+
+    deleteUserWidget_ = new QWidget();
+    {
+        auto lay = new QVBoxLayout(deleteUserWidget_);
+        auto btnLoad = new QPushButton("Загрузить пользователей");
+        auto list = new QTableWidget();
+        list->setColumnCount(3);
+        list->setHorizontalHeaderLabels({"Имя","Роль","Имя Фамилия"});
+        list->horizontalHeader()->setStretchLastSection(true);
+        auto btnDelete = new QPushButton("Удалить выбранного пользователя");
+
+        lay->addWidget(btnLoad);
+        lay->addWidget(list);
+        lay->addWidget(btnDelete);
+
+        // Загрузка пользователей
+        connect(btnLoad, &QPushButton::clicked, this, [this, list]() {
+            std::string err;
+            auto users = api_->getUsers(token_.toStdString(), err);
+            if (!err.empty()) {
+                QMessageBox::warning(this, "Ошибка", QString::fromStdString(err));
+                return;
+            }
+            list->setRowCount((int)users.size());
+            for (int i = 0; i < (int)users.size(); ++i) {
+                list->setItem(i,0,new QTableWidgetItem(QString::fromStdString(users[i].username)));
+                list->setItem(i,1,new QTableWidgetItem(QString::fromStdString(users[i].role)));
+                list->setItem(i,2,new QTableWidgetItem(QString::fromStdString(users[i].full_name)));
+            }
+        });
+
+        // Удаление выбранного пользователя
+        connect(btnDelete, &QPushButton::clicked, this, [this, list]() {
+            auto items = list->selectedItems();
+            if (items.empty()) {
+                QMessageBox::warning(this, "Ошибка", "Выберите пользователя");
+                return;
+            }
+            int row = items.first()->row();
+            int id = list->item(row, 0)->text().toInt();
+
+            auto confirm = QMessageBox::question(this, "Подтвердить удаление",
+                "Удалить пользователя с ID=" + QString::number(id) + "?");
+            if (confirm == QMessageBox::Yes) {
+                std::string err;
+                if (api_->deleteUser(token_.toStdString(), id, err)) {
+                    QMessageBox::information(this, "ОК", "Пользователь удалён");
+                    list->removeRow(row);
+                } else {
+                    QMessageBox::warning(this, "Ошибка", QString::fromStdString(err));
+                }
+            }
+        });
+    }
+    mainStack_->addWidget(deleteUserWidget_);
+    
+    editRoleAccessWidget_ = new QWidget();
+    {
+        auto lay = new QVBoxLayout(editRoleAccessWidget_);
+    
+        // Заголовок
+        lay->addWidget(new QLabel("Редактирование доступов для роли (заглушка)"));
+    
+        // Таблица прав доступа
+        auto table = new QTableWidget();
+        table->setColumnCount(3);
+        table->setHorizontalHeaderLabels({"Роль", "Просмотр всех пользователей", "Редактирование контроллера"});
+        // table->horizontalHeader()->setStretchLastSection(true);
+        table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+        table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+        table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+        table->verticalHeader()->setDefaultSectionSize(45);
+    
+        // Заглушка данных
+        QStringList roles = {"engineer", "guest"};
+        table->setRowCount(roles.size());
+    
+        for (int row = 0; row < roles.size(); ++row) {
+            // Название роли
+            table->setItem(row, 0, new QTableWidgetItem(roles[row]));
+    
+            // Просмотр всех пользователей
+            auto comboView = new QComboBox();
+            comboView->addItem("Разрешён");
+            comboView->addItem("Запрещён");
+            if (roles[row] == "guest") comboView->setCurrentText("Разрешён"); // guest может только смотреть
+            else comboView->setCurrentText("Разрешён"); // engineer может смотреть
+            table->setCellWidget(row, 1, comboView);
+    
+            // Редактирование контроллера
+            auto comboEdit = new QComboBox();
+            comboEdit->addItem("Разрешён");
+            comboEdit->addItem("Запрещён");
+            if (roles[row] == "guest") comboEdit->setCurrentText("Запрещён"); // guest не редактирует
+            else comboEdit->setCurrentText("Разрешён"); // engineer может редактировать
+            table->setCellWidget(row, 2, comboEdit);
+        }
+    
+        lay->addWidget(table);
+    
+        // Кнопка "Сохранить" (ещё не реализовано)
+        auto btnSave = new QPushButton("Сохранить изменения");
+        lay->addWidget(btnSave);
+        connect(btnSave, &QPushButton::clicked, this, [table]() {
+            // Пример чтения выбранных значений из таблицы
+            int rows = table->rowCount();
+            QString result;
+            for (int i = 0; i < rows; ++i) {
+                QString role = table->item(i, 0)->text();
+                auto viewCombo = qobject_cast<QComboBox*>(table->cellWidget(i, 1));
+                auto editCombo = qobject_cast<QComboBox*>(table->cellWidget(i, 2));
+                if (!viewCombo || !editCombo) continue;
+                result += role + ": Просмотр=" + viewCombo->currentText() + ", Редактирование=" + editCombo->currentText() + "\n";
+            }
+            QMessageBox::information(nullptr, "Выбранные права (заглушка)", result);
+        });
+    }
+    mainStack_->addWidget(editRoleAccessWidget_);
+    
 
     v->addWidget(mainStack_);
     central->setLayout(v);
@@ -323,6 +456,8 @@ void MainWindow::onUsersComboChanged(int idx) {
         case 3: mainStack_->setCurrentWidget(createRoleWidget_); break;
         case 4: mainStack_->setCurrentWidget(grantWidget_); break;
         case 5: mainStack_->setCurrentWidget(revokeWidget_); break;
+        case 6: mainStack_->setCurrentWidget(deleteUserWidget_); break;
+        case 7: mainStack_->setCurrentWidget(editRoleAccessWidget_); break;
         default: break;
         }
 }
@@ -335,6 +470,33 @@ void MainWindow::onControllersComboChanged(int idx) {
 void MainWindow::onLogout() {
     emit logoutRequested();
 }
+
+QLineEdit* MainWindow::createSearchEdit(QTableWidget* table, std::vector<User>& users) {
+    auto searchEdit = new QLineEdit(this); // this = родитель
+    searchEdit->setPlaceholderText("Поиск по имени, роли или имени-фамилии");
+
+    connect(searchEdit, &QLineEdit::textChanged, this, [table, &users](const QString& text){
+        QString filter = text.trimmed().toLower();
+        table->setRowCount(0);
+        int row = 0;
+        for (const auto& u : users) {
+            QString uname = QString::fromStdString(u.username).toLower();
+            QString role = QString::fromStdString(u.role).toLower();
+            QString fname = QString::fromStdString(u.full_name).toLower();
+            if (uname.contains(filter) || role.contains(filter) || fname.contains(filter)) {
+                table->insertRow(row);
+                table->setItem(row,0,new QTableWidgetItem(QString::fromStdString(u.username)));
+                table->setItem(row,1,new QTableWidgetItem(QString::fromStdString(u.role)));
+                table->setItem(row,2,new QTableWidgetItem(QString::fromStdString(u.full_name)));
+                row++;
+            }
+        }
+    });
+
+    return searchEdit;
+}
+
+
 
 void MainWindow::showAddUserForm() {}
 void MainWindow::showViewUsers() {}

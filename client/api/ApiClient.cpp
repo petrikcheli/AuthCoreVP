@@ -4,6 +4,7 @@
 #include <curlpp/Options.hpp>
 #include <sstream>
 #include <nlohmann/json.hpp>
+#include <curlpp/Infos.hpp>
 
 using json = nlohmann::json;
 
@@ -74,32 +75,87 @@ std::vector<User> ApiClient::getUsers(const std::string& token, std::string& err
     return res;
 }
 
-// Добавление пользователя
 bool ApiClient::addUser(const std::string& token, const User& u, const std::string& password, std::string& err) {
-    json body = {
-        {"username", u.username},
-        {"password", password},
-        {"role", u.role},
-        {"full_name", u.full_name}
-    };
     try {
-        std::string header = "Authorization: Bearer " + token;
-        auto resp = postJson(baseUrl + "/api/admin/add-user", body.dump(), {header});
+        curlpp::Cleanup cleaner;
+        curlpp::Easy request;
+        std::ostringstream response;
+
+        request.setOpt(new curlpp::options::Url(baseUrl + "/api/admin/add-user"));
+
+        std::list<std::string> headers;
+        headers.push_back("Content-Type: application/json");
+        headers.push_back("Authorization: Bearer " + token);
+        request.setOpt(new curlpp::options::HttpHeader(headers));
+
+        nlohmann::json body = {
+            {"username", u.username},
+            {"full_name", u.full_name},
+            {"password", password},
+            {"role", u.role}
+        };
+        std::string bodyStr = body.dump();
+        request.setOpt(new curlpp::options::PostFields(bodyStr));
+        request.setOpt(new curlpp::options::PostFieldSize(bodyStr.size()));
+
+        request.setOpt(new curlpp::options::WriteStream(&response));
+
+        request.perform();
+
+        long responseCode = curlpp::infos::ResponseCode::get(request);
+
+        if (responseCode != 200) {
+            err = "Unexpected response code: " + std::to_string(responseCode) +
+            "\nResponse body: " + response.str();
+            return false;
+        }
         return true;
-    } catch (std::exception& e) {
+    }
+    catch (const std::exception& e) {
         err = e.what();
         return false;
     }
 }
 
-// Удаление пользователя
 bool ApiClient::deleteUser(const std::string& token, int id, std::string& err) {
-    json body = {{"id", id}};
     try {
-        std::string header = "Authorization: Bearer " + token;
-        auto resp = postJson(baseUrl + "/api/admin/delete-user", body.dump(), {header});
+        curlpp::Cleanup cleaner;
+        curlpp::Easy request;
+
+        std::ostringstream response;
+
+        // URL
+        request.setOpt(new curlpp::options::Url(baseUrl + "/api/admin/delete-user"));
+
+        // Заголовки
+        std::list<std::string> headers;
+        headers.push_back("Content-Type: application/json");
+        headers.push_back("Authorization: Bearer " + token);
+        request.setOpt(new curlpp::options::HttpHeader(headers));
+
+        // Тело запроса
+        nlohmann::json body = {{"id", id}};
+        std::string bodyStr = body.dump();
+        request.setOpt(new curlpp::options::PostFields(bodyStr));
+        request.setOpt(new curlpp::options::PostFieldSize(bodyStr.size()));
+
+        // Вывод в строку
+        request.setOpt(new curlpp::options::WriteStream(&response));
+
+        // Выполняем запрос
+        request.perform();
+
+        // Получаем код ответа (ТОЛЬКО после perform)
+        long responseCode = curlpp::infos::ResponseCode::get(request);
+
+        if (responseCode != 200) {
+            err = "Unexpected response code: " + std::to_string(responseCode) +
+                  "\nResponse body: " + response.str();
+            return false;
+        }
+
         return true;
-    } catch (std::exception& e) {
+    } catch (const std::exception& e) {
         err = e.what();
         return false;
     }
