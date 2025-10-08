@@ -1,102 +1,119 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>Roles Management</title>
-    <style>
-        table { border-collapse: collapse; width: 80%; margin: 20px auto; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
-        th { background-color: #f2f2f2; }
-        button { padding: 5px 10px; }
-    </style>
+<meta charset="UTF-8">
+<title>Управление ролями</title>
+<style>
+body { font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background:#f5f5f5; margin:0; padding:0;}
+.container { max-width:900px; margin:20px auto; display:flex; flex-direction:column; gap:15px;}
+.header { text-align:center; margin-bottom:10px;}
+.add-form {
+  position: sticky; top:0; background:#fff; padding:15px; border-radius:12px;
+  box-shadow:0 4px 14px rgba(0,0,0,0.06); display:flex; gap:10px; flex-wrap:wrap; align-items:center; z-index:10;
+}
+.add-form input { padding:8px; border-radius:8px; border:1px solid #cbd5e1;}
+.add-form label { display:flex; align-items:center; gap:5px; font-weight:500;}
+.add-form button { padding:8px 12px; border-radius:8px; border:none; background:#4B6BFB; color:white; font-weight:600; cursor:pointer;}
+.add-form button:hover { background:#5c7cfe;}
+.back-btn { background:#6c757d; color:white; padding:8px 12px; border:none; border-radius:8px; cursor:pointer; font-weight:600;}
+.back-btn:hover { background:#5a6268;}
+.roles-list { max-height:500px; overflow-y:auto; display:flex; flex-direction:column; gap:10px;}
+.role-card { background:#fff; border-radius:12px; padding:15px; box-shadow:0 4px 14px rgba(0,0,0,0.06);
+  display:flex; justify-content:space-between; align-items:center; transition: transform 0.2s;}
+.role-card:hover { transform:translateY(-2px);}
+.role-info { display:flex; flex-direction:column; gap:5px;}
+.role-info span { font-weight:500;}
+.actions button { margin-left:5px; padding:6px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:500; transition:0.2s;}
+.update-btn { background:#4B6BFB; color:white;}
+.update-btn:hover { background:#5c7cfe;}
+.delete-btn { background:#FF4C4C; color:white;}
+.delete-btn:hover { background:#FF6565;}
+</style>
 </head>
 <body>
-    <h2 style="text-align: center;">Roles Management</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Name</th>
-                <th>Controller Access</th>
-                <th>User List Access</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody id="rolesTable">
-        </tbody>
-    </table>
+<div class="container">
+  <h2 class="header">Управление ролями</h2>
 
-    <h3 style="text-align: center;">Add New Role</h3>
-    <div style="text-align: center;">
-        <input type="text" id="roleName" placeholder="Role Name">
-        <label><input type="checkbox" id="controllerAccess"> Controller</label>
-        <label><input type="checkbox" id="userListAccess"> User List</label>
-        <button onclick="createRole()">Add Role</button>
-    </div>
+  <!-- Форма добавления + кнопка назад -->
+  <div class="add-form">
+    <button class="back-btn" onclick="location.href='/admin/panel'">← Назад</button>
+    <input type="text" id="roleName" placeholder="Название роли">
+    <label><input type="checkbox" id="controllerAccess"> Контроллеры</label>
+    <label><input type="checkbox" id="userListAccess"> Список пользователей</label>
+    <button onclick="createRole()">Добавить роль</button>
+  </div>
 
-    <script>
-        const token = localStorage.getItem("jwt"); // JWT токен
+  <!-- Список ролей -->
+  <div class="roles-list" id="rolesList">
+    <!-- JS добавит карточки -->
+  </div>
+</div>
 
-        async function fetchRoles() {
-            const res = await fetch("/api/roles", {
-                headers: { "Authorization": "Bearer " + token }
-            });
-            if (!res.ok) { alert("Failed to fetch roles"); return; }
-            const roles = await res.json();
-            const table = document.getElementById("rolesTable");
-            table.innerHTML = "";
-            roles.forEach(r => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${r.name}</td>
-                    <td>${r.controller_access ? "Yes" : "No"}</td>
-                    <td>${r.user_list_access ? "Yes" : "No"}</td>
-                    <td>
-                        <button onclick="updateRole('${r.name}')">Update</button>
-                        <button onclick="deleteRole('${r.name}')">Delete</button>
-                    </td>`;
-                table.appendChild(tr);
-            });
-        }
+<script>
+const token = localStorage.getItem("jwt");
 
-        async function createRole() {
-            const name = document.getElementById("roleName").value;
-            const controller_access = document.getElementById("controllerAccess").checked;
-            const user_list_access = document.getElementById("userListAccess").checked;
+async function fetchRoles() {
+  const res = await fetch("/api/roles", { headers: { "Authorization": "Bearer " + token }});
+  if(!res.ok){ alert("Не удалось получить роли"); return; }
+  const roles = await res.json();
+  const list = document.getElementById("rolesList");
+  list.innerHTML = "";
+  roles.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "role-card";
+    div.innerHTML = `
+      <div class="role-info">
+        <span><strong>${r.name}</strong></span>
+        <span>Контроллеры: ${r.controller_access ? "Да" : "Нет"}</span>
+        <span>Список пользователей: ${r.user_list_access ? "Да" : "Нет"}</span>
+      </div>
+      <div class="actions">
+        <button class="update-btn" onclick="updateRole('${r.name}')">Изменить</button>
+        <button class="delete-btn" onclick="deleteRole('${r.name}')">Удалить</button>
+      </div>`;
+    list.appendChild(div);
+  });
+}
 
-            const res = await fetch("/api/roles/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                body: JSON.stringify({ name, controller_access, user_list_access })
-            });
-            if(res.ok) fetchRoles();
-            else alert("Failed to create role");
-        }
+async function createRole() {
+  const name = document.getElementById("roleName").value.trim();
+  const controller_access = document.getElementById("controllerAccess").checked;
+  const user_list_access = document.getElementById("userListAccess").checked;
+  if(!name){ alert("Введите название роли"); return; }
 
-        async function updateRole(name) {
-            const controller_access = confirm("Grant controller access?");
-            const user_list_access = confirm("Grant user list access?");
+  const res = await fetch("/api/roles/create", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json","Authorization":"Bearer "+token },
+    body: JSON.stringify({ name, controller_access, user_list_access })
+  });
+  if(res.ok) fetchRoles();
+  else alert("Не удалось создать роль");
+}
 
-            const res = await fetch("/api/roles/update", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                body: JSON.stringify({ name, controller_access, user_list_access })
-            });
-            if(res.ok) fetchRoles();
-            else alert("Failed to update role");
-        }
+async function updateRole(name) {
+  const controller_access = confirm("Дать доступ к контроллерам?");
+  const user_list_access = confirm("Дать доступ к списку пользователей?");
+  const res = await fetch("/api/roles/update", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json","Authorization":"Bearer "+token },
+    body: JSON.stringify({ name, controller_access, user_list_access })
+  });
+  if(res.ok) fetchRoles();
+  else alert("Не удалось обновить роль");
+}
 
-        async function deleteRole(name) {
-            if(!confirm("Delete role " + name + "?")) return;
-            const res = await fetch("/api/roles/delete", {
-                method: "POST",
-                headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
-                body: JSON.stringify({ name })
-            });
-            if(res.ok) fetchRoles();
-            else alert("Failed to delete role");
-        }
+async function deleteRole(name) {
+  if(!confirm("Удалить роль " + name + "?")) return;
+  const res = await fetch("/api/roles/delete", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json","Authorization":"Bearer "+token },
+    body: JSON.stringify({ name })
+  });
+  if(res.ok) fetchRoles();
+  else alert("Не удалось удалить роль");
+}
 
-        fetchRoles(); // загрузка таблицы при открытии
-    </script>
+fetchRoles();
+</script>
 </body>
 </html>

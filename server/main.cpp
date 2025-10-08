@@ -7,24 +7,25 @@
 
 #include <nlohmann/json.hpp>
 
-#ifdef _WIN32
-    #include <windows.h>
-#endif
-
 int main() {
-    #ifdef _WIN32
-        SetConsoleCP(65001);
-        SetConsoleOutputCP(65001);
-    #endif
+    //инициализируем библиотку sodium
     password_hasher::init();
+    //подключаемся к базе данных auth.db (Она лежит у исполнительного файла)
     data_base db("auth.db");
+    //при внедрении в проект нужно будет српятать ключ и поменять его
     jwt_manager jwt("super_secret_key");
-    crow::logger::setLogLevel(crow::LogLevel::Info); // для более подробного логирования
+    //доступ к логированию, можно будет писать логи crow
+    crow::logger::setLogLevel(crow::LogLevel::Info);
+    //web-server crow
     crow::SimpleApp app;
 
+    //обработчики
     routes(app, db, jwt);
 
+    //cli для сервера
     ServerCLI cli(db, jwt);
     cli.start();
+
+    // запускаем на порту 18080
     app.port(18080).multithreaded().run();
 }

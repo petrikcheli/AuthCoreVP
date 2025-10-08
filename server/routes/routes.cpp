@@ -2,6 +2,7 @@
 #include "password_hasher.h" // если нужно
 #include "crow/mustache.h"
 #include "rate_limiter.h"
+#include "audit_logger.h"
 
 #include <optional>
 
@@ -91,6 +92,9 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
             crow::response res(302);
             res.set_header("Location", "/admin/panel");
             res.add_header("Set-Cookie", "token=" + token + "; HttpOnly; Path=/");
+
+            audit_admin_action(username, "login");
+
             return res;
         });
 
@@ -633,4 +637,48 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
         return ok ? crow::response(200, "Role deleted") : crow::response(400, "Failed");
     });
 
+    CROW_ROUTE(app, "/api/user/login").methods("POST"_method)(
+        [&db, &jwt, &limiter](const crow::request& req) {
+            // Получаем IP клиента
+            std::string client_ip = req.remote_ip_address; // Crow >= 1.0
+            if (!limiter.allow(client_ip)) {
+                return crow::response(429, "Too many attempts, try later");
+            }
+
+            // Разбор JSON
+            auto body = nlohmann::json::parse(req.body, nullptr, false);
+            if (body.is_discarded()) {
+                return crow::response(400, "Invalid JSON");
+            }
+
+            std::string username = body.value("username", "");
+            std::string password = body.value("password", "");
+
+            if (username.empty() || password.empty()) {
+                return crow::response(400, "Missing username or password");
+            }
+
+            // Аутентификация
+            auto user_opt = db.authenticate(username, password);
+            if (!user_opt) {
+                limiter.add_failure(client_ip);  // учитываем неудачную попытку
+                std::this_thread::sleep_for(std::chrono::seconds(1)); // защита от брутфорса
+                return crow::response(401, "Invalid username or password");
+            }
+
+            limiter.add_success(client_ip); // успешный вход
+
+            // Создаем JWT-токен (например, срок действия 24 часа)
+            std::string token = jwt.create_token(username, 3600 * 24);
+
+            // Формируем JSON-ответ
+            nlohmann::json res;
+            res["token"] = token;
+            res["username"] = username;
+            res["role"] = user_opt->role;
+
+            crow::response resp(res.dump());
+            resp.set_header("Content-Type", "application/json");
+            return resp;
+        });
 }

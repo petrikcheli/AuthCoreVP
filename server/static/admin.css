@@ -62,14 +62,14 @@ body {
   text-align: center;
 }
 
+/* Подсветка только при наведении */
 .sidebar-nav a:hover {
   background-color: #4B6BFB;
   transform: translateX(3px);
 }
 
-.sidebar-nav a.active {
-  background-color: #4B6BFB;
-}
+/* Убираем правило для active */
+/* .sidebar-nav a.active { background-color: #4B6BFB; } */
 
 .sidebar-nav a.logout {
   margin-top: auto;

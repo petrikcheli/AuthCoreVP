@@ -34,7 +34,7 @@ file(GLOB SOURCES
 add_executable(${PROJECT_NAME} ${SOURCES})
 
 # Указываем, где искать заголовочные файлы
-target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher routes cli rate_limiter)
+target_include_directories(${PROJECT_NAME} PRIVATE db jwt hasher routes cli rate_limiter audit)
 target_include_directories(${PROJECT_NAME} PRIVATE ${SQLITE_MODERN_CPP_INCLUDE_DIRS})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
