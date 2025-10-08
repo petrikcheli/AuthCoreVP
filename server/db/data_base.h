@@ -30,6 +30,14 @@ struct AuthenticatedUser {
     std::string role;
 };
 
+struct SimpleRole {
+    int id;
+    std::string name;
+    bool controller_access;
+    bool user_list_access;
+};
+
+
 class data_base {
 public:
     explicit data_base(const std::string& filename);
@@ -57,7 +65,20 @@ public:
     bool grant_all_access(int user_id);
     bool revoke_all_access(int user_id);
 
+    void get_all_simple_roles(std::vector<SimpleRole> &roles);
+    bool role_has_controller_access(const std::string &role_name);
+    bool role_has_user_list_access(const std::string &role_name);
+    bool add_simple_role(const std::string &name, bool controller_access, bool user_list_access);
+    bool update_simple_role(const std::string &name, bool controller_access, bool user_list_access);
+    bool delete_simple_role(const std::string &name);
 private:
     sqlite::database db_;
     void init_tables();
+
+    bool mark_user_must_change_password(const std::string& username);
+    bool must_change_password(const std::string& username);
+
+    bool ensure_default_admin();
+
+    void ensure_default_roles();
 };

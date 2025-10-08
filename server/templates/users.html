@@ -59,7 +59,7 @@ body { font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background-c
     <input type="text" id="searchUser" placeholder="Поиск пользователя..." onkeyup="filterUsers()">
   </div>
 
-  <!-- Форма добавления всегда сверху -->
+  <!-- Форма добавления -->
   <div class="add-form">
     <input type="text" id="username" placeholder="Имя пользователя">
     <input type="text" id="full_name" placeholder="Полное имя">
@@ -74,7 +74,8 @@ body { font-family:"Segoe UI", Tahoma, Geneva, Verdana, sans-serif; background-c
     <div class="user-card">
       <div class="user-info">
         <span><strong>ID:</strong> {{id}}</span>
-        <span><strong>Имя:</strong> {{username}}</span>
+        <span><strong>Имя пользователя:</strong> {{username}}</span>
+        <span><strong>Полное имя:</strong> {{full_name}}</span>
         <span><strong>Роль:</strong> {{role}}</span>
       </div>
       <div class="actions">
@@ -91,7 +92,8 @@ function filterUsers() {
   const filter = document.getElementById("searchUser").value.toLowerCase();
   document.querySelectorAll('.user-card').forEach(card => {
     const username = card.querySelector('.user-info span:nth-child(2)').textContent.toLowerCase();
-    card.style.display = username.includes(filter) ? '' : 'none';
+    const fullName = card.querySelector('.user-info span:nth-child(3)').textContent.toLowerCase();
+    card.style.display = username.includes(filter) || fullName.includes(filter) ? '' : 'none';
   });
 }
 
