@@ -43,6 +43,9 @@ public:
     bool grantAllControllers(const std::string& token, int userId, std::string& err);
     bool revokeAllControllers(const std::string& token, int userId, std::string& err);
 
+    std::vector<nlohmann::json> getRoles(const std::string& token, std::string& err);
+    bool updateRole(const std::string& token, const nlohmann::json& roleSpec, std::string& err);
+
 private:
     std::string baseUrl;
     void isFullName(const nlohmann::json& j, User& u);
