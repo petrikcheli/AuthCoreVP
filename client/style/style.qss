@@ -124,7 +124,6 @@ QComboBox QAbstractItemView {
 }
 QComboBox QAbstractItemView::item {
     text-align: left;
-    text-overflow: clip;
 }
 
 /* QMessageBox */

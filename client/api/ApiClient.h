@@ -22,24 +22,24 @@ class ApiClient {
 public:
     explicit ApiClient(const std::string& base_url);
 
-    // --- Auth ---
+    // Аутентификация
     bool login(const std::string& username, const std::string& password, std::string& token_out);
 
-    // --- Users ---
+    // Взаимодействие с пользователями
     std::vector<User> getUsers(const std::string& token, std::string& err);
     bool addUser(const std::string& token, const User& u, const std::string& password, std::string& err);
     bool updateUser(const std::string& token, const User& u, std::string& err);
     bool deleteUser(const std::string& token, int id, std::string& err);
-
-    // --- Controllers ---
+    
+    // Работа с контроллерами
     std::vector<Controller> getControllers(const std::string& token, std::string& err);
     bool addController(const std::string& token, const Controller& c, std::string& err);
     bool deleteController(const std::string& token, int id, std::string& err);
 
-    // --- Roles ---
+    // Роли
     bool createRole(const std::string& token, const nlohmann::json& roleSpec, std::string& err);
 
-    // --- Access ---
+    // Доступ к контроллерам
     bool grantAllControllers(const std::string& token, int userId, std::string& err);
     bool revokeAllControllers(const std::string& token, int userId, std::string& err);
 
