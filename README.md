@@ -17,7 +17,7 @@
 ```bash
 curl -O https://raw.githubusercontent.com/petrikcheli/AuthCoreVP/main/build_project.sh
 chmod +x build_project.sh
-./build_project.sh
+sudo ./build_project.sh
 ```
 # AuthCoreVP
 Сервис централизованной авторизации для промышленных контроллеров
