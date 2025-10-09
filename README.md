@@ -15,7 +15,9 @@
 Можно скачать и запустить скрипт напрямую с GitHub:
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/ТВОЙ_АККАУНТ/build-authcorevp-script/main/build_project.sh)
+curl -O https://raw.githubusercontent.com/petrikcheli/AuthCoreVP/main/build_project.sh
+chmod +x build_project.sh
+./build_project.sh
 ```
 # AuthCoreVP
 Сервис централизованной авторизации для промышленных контроллеров
