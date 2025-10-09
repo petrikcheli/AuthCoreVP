@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
         app.setStyleSheet(style); // применяем стиль ко всему приложению
     }
 
-    ApiClient api("http://127.0.0.1:18080"); 
+    ApiClient api("https://petrichelitest.ru");
     QString token;
 
     AuthDialog auth(&api);

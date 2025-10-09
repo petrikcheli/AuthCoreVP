@@ -57,11 +57,7 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
     // api/admin/revoke-access-all
 
     CROW_ROUTE(app, "/admin/login").methods("POST"_method)(
-        [&db, &jwt, &limiter](const crow::request& req){
-            std::string client_ip = req.remote_ip_address;
-            if(!limiter.allow(client_ip)){
-                return crow::response(429, "Too many attempts, try later");
-            }
+        [&db, &jwt](const crow::request& req){
             std::string username;
             std::string password;
 
@@ -81,12 +77,8 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
 
             auto user = db.authenticate(username, password);
             if(!user || user->role != "admin"){
-                limiter.add_failure(client_ip);
-                std::this_thread::sleep_for(std::chrono::seconds(1));
                 return crow::response(401, "Unauthorized");
             }
-
-            limiter.add_success(client_ip);
 
             std::string token = jwt.create_token(username, 3600);
             crow::response res(302);
@@ -372,11 +364,7 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
 
     //API
     // Авторизация администратора
-    CROW_ROUTE(app, "/api/admin/login").methods("POST"_method)([&db, &jwt, &limiter](const crow::request& req){
-        std::string client_ip = req.remote_ip_address;
-        if(!limiter.allow(client_ip)){
-            return crow::response(429, "Too many attempts, try later");
-        }
+    CROW_ROUTE(app, "/api/admin/login").methods("POST"_method)([&db, &jwt](const crow::request& req){
         auto body = nlohmann::json::parse(req.body, nullptr, false);
         if (body.is_discarded())
             return crow::response(400, "Invalid JSON");
@@ -386,11 +374,8 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
 
         auto user = db.authenticate(username, password);
         if (!user || user->role != "admin"){
-            limiter.add_failure(client_ip);
-            std::this_thread::sleep_for(std::chrono::seconds(1));
             return crow::response(401, "Unauthorized");
         }
-        limiter.add_success(client_ip);
 
         std::string token = jwt.create_token(username, 3600 * 24); // сутки
         nlohmann::json res = {{"token", token}, {"username", username}};
@@ -638,13 +623,7 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
     });
 
     CROW_ROUTE(app, "/api/user/login").methods("POST"_method)(
-        [&db, &jwt, &limiter](const crow::request& req) {
-            // Получаем IP клиента
-            std::string client_ip = req.remote_ip_address; // Crow >= 1.0
-            if (!limiter.allow(client_ip)) {
-                return crow::response(429, "Too many attempts, try later");
-            }
-
+        [&db, &jwt](const crow::request& req) {
             // Разбор JSON
             auto body = nlohmann::json::parse(req.body, nullptr, false);
             if (body.is_discarded()) {
@@ -661,12 +640,8 @@ void routes(crow::SimpleApp& app, data_base& db, jwt_manager& jwt) {
             // Аутентификация
             auto user_opt = db.authenticate(username, password);
             if (!user_opt) {
-                limiter.add_failure(client_ip);  // учитываем неудачную попытку
-                std::this_thread::sleep_for(std::chrono::seconds(1)); // защита от брутфорса
                 return crow::response(401, "Invalid username or password");
             }
-
-            limiter.add_success(client_ip); // успешный вход
 
             // Создаем JWT-токен (например, срок действия 24 часа)
             std::string token = jwt.create_token(username, 3600 * 24);
