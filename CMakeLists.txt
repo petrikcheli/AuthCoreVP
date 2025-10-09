@@ -6,4 +6,4 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Добавляем подпроекты
 add_subdirectory(client)
-add_subdirectory(server)
+#add_subdirectory(server)

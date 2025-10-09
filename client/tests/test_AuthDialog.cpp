@@ -4,7 +4,7 @@
 
 class MockApiClient : public ApiClient {
 public:
-    MockApiClient() : ApiClient("http://localhost:8080") {}
+    MockApiClient() : ApiClient("https://petrichelitest.ru") {}
 
     bool login(const std::string& username, const std::string& password, std::string& token_out) {
         if (username == "admin" && password == "admin") {

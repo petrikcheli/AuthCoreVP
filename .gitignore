@@ -39,4 +39,3 @@
 CMakeLists.txt.user*
 .clang-format
 .VSCodeCounter
-server/static/logo.webp
