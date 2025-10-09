@@ -2,7 +2,6 @@
   "dependencies": [
     "curlpp",
     "nlohmann-json",
-    "qtbase",
     "gtest"
   ]
 }
